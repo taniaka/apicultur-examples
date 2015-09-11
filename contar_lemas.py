@@ -60,8 +60,6 @@ if __name__ == '__main__':
     for (lemma, cat), count in common_words:
         print(u"\t\t%-15s\t\t%-10s\t\t%s" % (lemma, cat, count))
 
-print('Esto es un cambio')
-
 
 
 
