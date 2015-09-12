@@ -1,4 +1,5 @@
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from apicultur.utils import ApiculturRateLimitSafe
 try:
@@ -52,7 +53,7 @@ def get_last(word, number):
 
 def del_accent(word):
   new_word = word
-  accents = {'á': 'a', 'ú':'u', 'í':'i', 'é':'e', 'ó':'o'}
+  accents = {u'á': 'a', u'ú':'u', u'í':'i', u'é':'e', u'ó':'o'}
   last_two = get_last(word, 2)
   if word[-1] == 'r':
     syllable = last_two[-1]
@@ -89,13 +90,13 @@ def analyze_word(word):
     print('No has introducido nada, vuelve a intentar.')
     return
 
-  print('Tu palabra es: {}.'.format(word.upper()))
+  print(u'Tu palabra es: {}.'.format(word.upper()))
   
   last_syllables = get_last(word, 2)
   last_syllables = ['os' if syllable == 'ros' else syllable for syllable in last_syllables]
   if len(last_syllables) < 2:
-    print('Tu palabra solo tiene una sílaba '
-          'y no puede tener enclíticos, intenta con otra palabra.')
+    print(u'\tTu palabra solo tiene una sílaba '
+          u'y no puede tener enclíticos, intenta con otra palabra.')
     return
 
   last = last_syllables[-1]
@@ -105,51 +106,49 @@ def analyze_word(word):
   lemas = lematize(verb)
 
   if not lemas:
-    print('Parece que "{}" no es un verbo.'.
+    print(u'\tParece que "{}" no es un verbo.'.
           format(word))
 
   else:
 
     if len(lemas) == 1:
-      print('Tienes un verbo: {}.'.format(lemas[0]))
+      print(u'\tTienes un verbo: {}.'.format(lemas[0]))
     else:
-      print('Tienes un verbo que podría ser uno de los siguientes:')  
-      for lema in lemas:
-        print(lema)
+      print(u'\tTienes un verbo que podría ser uno de los siguientes: {}'.format(', '.join(lemas)))  
 
     if not enclitics:
-      print('No hemos detectado enclíticos.')
+      print(u'\tNo hemos detectado enclíticos.')
 
     elif len(enclitics) == 1:
-      print('Tienes un enclítico de tipo complemento {}: {}.'.
+      print(u'\tTienes un enclítico de tipo complemento {}: {}.'.
             format(pronouns[last], last))
 
     elif len(enclitics) == 2:
-      print("Tienes dos enclíticos")
+      print(u"\tTienes dos enclíticos")
       if second_last == "se":
-        print("El primero es un complemento indirecto: {}, "
-              "sustityendo al pronombre 'le' o 'les'.".
+        print(u"\t\tEl primero es un complemento indirecto: {}, "
+              u"sustituyendo al pronombre 'le' o 'les'.".
               format(second_last))
       else:
-        print("El primero es un complemento indirecto: {}.".
+        print(u"\t\tEl primero es un complemento indirecto: {}.".
               format(second_last))      
-      print("El segundo es un complemento directo: {}.".
+      print(u"\t\tEl segundo es un complemento directo: {}.".
             format(last))
 
-analyze_word("dime")
-analyze_word("preguntaros")
-analyze_word("dárosla")
-analyze_word("tomárselas")
-analyze_word("pónselas")
-analyze_word("pregúntatela")
-analyze_word("sálvanos")
-analyze_word("acercaros")
-analyze_word(' ')
-analyze_word("trabajo")
-analyze_word("burros")
-analyze_word("majos")
-analyze_word("mala")
-analyze_word("las")
-analyze_word("verde")
+analyze_word(u"dime")
+analyze_word(u"preguntaros")
+analyze_word(u"dárosla")
+analyze_word(u"tomárselas")
+analyze_word(u"pónselas")
+analyze_word(u"pregúntatela")
+analyze_word(u"sálvanos")
+analyze_word(u"acercaros")
+analyze_word(u' ')
+analyze_word(u"trabajo")
+analyze_word(u"burros")
+analyze_word(u"majos")
+analyze_word(u"mala")
+analyze_word(u"las")
+analyze_word(u"verde")
 
 
