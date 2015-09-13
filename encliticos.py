@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 from apicultur.utils import ApiculturRateLimitSafe
 try:
     from secret import ACCESS_TOKEN 
@@ -78,9 +79,12 @@ def detect_enclitics(word, last, second_last):
       length += len(last)
       if second_last in pronouns:
         enclitics.insert(0, second_last)
-        length += len(second_last)  
-    verb = word[0:-length]
-    verb = del_accent(verb)
+        length += len(second_last)
+    if ''.join(enclitics) == word:
+      verb = None
+    else:       
+      verb = word[0:-length]
+      verb = del_accent(verb)
 
   return verb, enclitics  
 
@@ -99,11 +103,13 @@ def analyze_word(word):
           u'y no puede tener enclíticos, intenta con otra palabra.')
     return
 
+
   last = last_syllables[-1]
   second_last = last_syllables[-2]
   verb, enclitics = detect_enclitics(word, last, second_last)
 
   lemas = lematize(verb)
+
 
   if not lemas:
     print(u'\tParece que "{}" no es un verbo.'.
@@ -114,17 +120,17 @@ def analyze_word(word):
     if len(lemas) == 1:
       print(u'\tTienes un verbo: {}.'.format(lemas[0]))
     else:
-      print(u'\tTienes un verbo que podría ser uno de los siguientes: {}'.format(', '.join(lemas)))  
+      print(u'\tTienes un verbo que podría ser uno de los siguientes: {}.'.format(', '.join(lemas)))  
 
     if not enclitics:
-      print(u'\tNo hemos detectado enclíticos.')
+      print(u'\tNo se han detectado enclíticos.')
 
     elif len(enclitics) == 1:
       print(u'\tTienes un enclítico de tipo complemento {}: {}.'.
             format(pronouns[last], last))
 
     elif len(enclitics) == 2:
-      print(u"\tTienes dos enclíticos")
+      print(u"\tTienes dos enclíticos:")
       if second_last == "se":
         print(u"\t\tEl primero es un complemento indirecto: {}, "
               u"sustituyendo al pronombre 'le' o 'les'.".
@@ -150,5 +156,17 @@ analyze_word(u"majos")
 analyze_word(u"mala")
 analyze_word(u"las")
 analyze_word(u"verde")
+analyze_word(u"kjlkj;")
+analyze_word(u"hkjhtela")
 
+print(u'Escribe tu palabra aquí.'
+      u'Si no quieres seguir, escribe QUIT.')
+
+while True:
+  my_word = input(u'>>> ')
+  my_word = u"{}".format(my_word)
+  if my_word.upper() == 'QUIT':
+    sys.exit()
+  else:
+    analyze_word(my_word)
 
