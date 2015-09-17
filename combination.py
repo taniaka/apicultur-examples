@@ -1,0 +1,137 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+class Combination:
+
+  VALID_COMBINATIONS = (
+      'melo', 'mela', 'melos', 'melas',
+      'telo', 'tela', 'telos', 'telas',
+      'teme', 'tenos',
+      'selo', 'sela', 'selos', 'selas',
+      'noslo', 'nosla', 'noslos', 'noslas',
+      'oslo' 'osla', 'oslos', 'oslas',
+      'osme', 'osnos'
+  )
+
+  INVALID_COMBINATIONS =  (
+    {
+      'error_type': u'le por se',
+      'cases': [
+        'lelo', 'lela', 'lelos',
+        'lelas', 'leslo', 'lesla', 'leslos', 'leslas'
+      ],
+      'message':
+        u"Cuando 'le' o 'les' se juntan "
+        u"con un complemento directo siempre "
+        u"se cambian por 'se'."
+    },
+
+    {
+      'error_type': u'orden OD OI incorrecto',
+      'cases': [
+        'lale', 'lole', 'lasle', 'losle',
+        'loles', 'loles', 'lasles', 'losles'
+      ],
+      'message':
+        u"Si los dos enclíticos son de tercera persona, "
+        u"el orden correcto es Objeto Indirecto - Objeto Directo."
+    },
+
+    {
+      'error_type': u'leísmo o reflexivo',
+      'cases': ['sele', 'seles'],
+      'message':
+        u'Puede ser un error de leísmo,' 
+        u'quizá quisiste acabarlo en uno de los siguientes '
+        u'pronombres: lo, la, los, las. O puede que tengas '
+        u'un verbo con un "se" reflexivo, recíproco o impersonal '
+        u'y un pronombre enclítico de complemente indirecto.'
+    },
+
+    {
+      'error_type': u'OI 3ra con OD 1ra o 2da',
+      'cases': ['leme', 'lete', 'lenos', 'leos'],
+      'message':
+        u"Si los dos enclíticos son de tercera persona, "
+        u"el orden correcto es Objeto Indirecto - Objeto Directo."
+    },
+
+    {
+      'error_type': u'sleísmo',
+      'cases': ['lesle', 'leles'],
+      'message':
+        u"No se pueden combinar dos pronombres indirectos. "
+    },     
+
+    {
+      'error_type': u'1ra persona delante de la 2da',
+      'cases': ['mete', 'meos', 'noste', 'nosos'],
+      'message':
+        u'No se pueden combinar enclíticos '
+        u'de la misma persona gramatical entre ellos, '
+        u'salvo que sean de la tercera persona.'
+    },
+
+    {
+      'error_type': u'Dos enclíticos de la misma persona',
+      'cases': ['nosme', 'menos', 'oste', 'teos'],
+      'message':
+        u'No se pueden combinar enclíticos '
+        u'de la misma persona gramatical entre ellos, '
+        u'salvo que sean de la tercera persona.'
+    },
+
+    {
+      'error_type': u'Se repite el mismo pronombre',
+      'cases':[
+        'meme', 'tete', 'lala','lolo', 'sese',
+        'nosnos','osos','laslas','loslos', 'lesles', 'lele'
+      ],
+      'message': u'No se puede repetir el mismo pronombre.'
+    }
+  )
+
+  VALID_MESSAGE = u"\tAquí tendremos un mensaje explicando "\
+                  u"por qué esta combinación es válida y cómo "\
+                  u"hay que combinar los enclíticos."
+
+  INVALID_MESSAGE = u"Sin embargo, esta combinación no es válida."
+                        
+
+  def __init__(self, combination):
+    self.combination = combination
+    self.error = None
+    self.message = self.VALID_MESSAGE
+    self.is_valid = combination in self.VALID_COMBINATIONS
+    if not self.is_valid:
+      for group in self.INVALID_COMBINATIONS:
+        if combination in group['cases']:
+          self.error =  group['error_type']
+          self.message = '\t{}\n\t{}'.format(
+                          self.INVALID_MESSAGE, group['message'])
+          break
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
