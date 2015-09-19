@@ -4,13 +4,13 @@
 import sys
 from apicultur.utils import ApiculturRateLimitSafe
 try:
-    from .. import secret
+
     from secret import ACCESS_TOKEN 
 except ImportError:
     print(u"No encuentro el archivo 'secret.py' en este directorio con su ACCESS_TOKEN...")
     sys.exit(1)
 
-from combination import Combination
+from structure import Structure
 
 class Word:
 
@@ -23,205 +23,223 @@ class Word:
       'los': 'directo',
       'nos': 'directo o indirecto',
       'me': 'directo o indirecto',
-      'se': 'directo o indirecto',
       'os': 'directo o indirecto',
-      'te': 'directo o indirecto'
+      'te': 'directo o indirecto',
+      'se': 'indirecto, sustituyendo a "le" o "les"'
   }
-
-
 
   APICULTUR = ApiculturRateLimitSafe(ACCESS_TOKEN, "example")
 
   def __init__(self, word):
     self.word = word
-    self.last_syllables = self.get_last(word)
+    self.structures = []
 
-    self.base_woord = word
-    # self.first, self.second = None, None
-    self.enclitics = []
-    self.infinitives = []
-    self.is_valid_form = False
-
-
-  def get_last(self, word):
-    last_syllables = []
+  def get_last(self, word, num):
+    last_syls = []
     syllabized = self.APICULTUR.silabeame(word=word)
     syllables = syllabized['palabraSilabeada'].split('=')
-    for num in range(2):
-      index = -(num+1)
+    for syl in range(num):
+      index = -(syl+1)
       try:
-        last_syllables.insert(0,syllables[index])
+        last_syls.insert(0,syllables[index])
       except:
-        break
-    last_syllables = ['os' if syllable == 'ros' 
-                      else syllable for syllable in last_syllables]
-    #TODO: cometodos                  
-    return last_syllables
+        break              
+    return last_syls
 
   def del_accent(self, my_word):
-    new_word = my_word
+    accentless = my_word
     accents = {u'á': 'a', u'ú':'u', u'í':'i', u'é':'e', u'ó':'o'}
-    last_two = self.get_last(my_word)
-    if my_word[-1] == 'r':
+    last_two = self.get_last(my_word, 2)
+    if my_word[-1] in ['r', 'd']:
       syllable = last_two[-1]
     else:
       syllable = last_two[0]
     for key, value in accents.items():
       if key in syllable:
         new_syllable = syllable.replace(key, value)
-        new_word = my_word.replace(syllable, new_syllable)    
+        accentless = my_word.replace(syllable, new_syllable)    
         break
-    return new_word   
+    return accentless   
 
-  def detect_enclitics(self):
-    length = 0
+  def add_letter(self, base_word, encl):
+    #detect vámonos and démosela types of verbs      
+    pos_1 = self.word.rfind(encl)
+    pos_2 = self.word.rfind('mo'+encl)
+    if pos_1 == pos_2 + 2:
+      if pos_2 not in [0, 1]:
+        base_word = base_word + 's'
+    return base_word    
 
-    if self.last in self.PRONOUNS:
-      self.enclitics.append(self.last)
-      length += len(self.last)
-      if self.second_last in self.PRONOUNS:
-        self.enclitics.insert(0, self.second_last)
-        length += len(self.second_last)    
-        
-      if ''.join(self.enclitics) == self.word:
-        self.base_woord = self.second_last
-        self.enclitics = [self.last]
-      else:
-        self.base_woord = self.word[0:-length]
-      if self.enclitics[0] == 'nos':
-        position1 = self.word.rfind('nos')
-        position2 = self.word.rfind('monos')
-        if position1 == position2 + 2:
-          if position2 not in [0, 1]:
-            self.base_woord = self.base_woord + 's'
-     
-    self.base_woord = self.del_accent(self.base_woord)
-    return
+  def get_enclitics(self, syls):
+    second_last, last = syls[0], syls[1]
+    base_word = self.word
+    enclitics = []
+    if last in self.PRONOUNS:
+      enclitics.append(last)
+      if second_last in self.PRONOUNS:
+        enclitics.insert(0,second_last)
+    if len(enclitics) < 2:
+      #caso 'tomárosla'
+      if second_last in ['dos', 'ros']:
+        enclitics = ['os', last]
+      #casos 'tomaros', 'plumeros', 'tomados', volver a detectar
+      elif last in ['dos', 'ros']:
+        second_last += last[0]
+        return self.get_enclitics([second_last, 'os'])
+      #caso 'tomárosos'
+      elif second_last in ['do', 'ro'] and last == 'sos':
+        enclitics = ['os', 'os']
+    if ''.join(enclitics) == self.word:
+      base_word = second_last
+      enclitics = [last]
+    else:
+      if enclitics:
+        length = len(''.join(enclitics))
+        base_word = self.word[0:-length]
+        if enclitics[0] in ['nos', 'se']:
+          base_word = self.add_letter(base_word, enclitics[0])
+    base_word = self.del_accent(base_word)
+    return base_word, enclitics
 
+  def is_regular(self, part, base_word):
+    #mark vámosnos, démossela y marchados as invalid for enclitics
+    #TODO disambiguate marchados
+    parts = {'mos': ['nos', 'se'], 'd': ['os']}
+    try:
+      encls = parts[part]
+    except:
+      return True  
+    for encl in encls:
+      if self.word.rfind(part+encl) != -1:
+        return False
+    return True 
+  
 
-  def detect_verbs(self):
-    iig_infinitives = []
-    lemmas = self.APICULTUR.lematiza2(word=self.base_woord)
+  def detect_verbs(self, base_word, enclitics):
+    iig_infinitives = [] #infinitives for inf, imp and ger forms
+    infinitives = []
+    is_valid_form = False
+    lemmas = self.APICULTUR.lematiza2(word=base_word)
     if lemmas:
       for lemma in lemmas['lemas']:
         category = lemma['categoria']
         if category[0] == 'V':
-          self.infinitives.append(lemma['lema'])
+          infinitives.append(lemma['lema'])
           if category[0:3] in ['VMM', 'VMG', 'VMN']:
-            self.is_valid_form = True
+            is_valid_form = True
             iig_infinitives.append(lemma['lema'])
             
-            if self.base_woord[-3:] == 'mos'and self.enclitics[0] == 'nos':
-              position = self.word.rfind('nos')
-              if self.word[position - 1] == 's':
-                self.is_valid_form = False
+            # print(base_word, enclitics, is_valid_form, infinitives)
+            if base_word != self.word and infinitives:
+              if base_word[-3:] == 'mos':
+                is_valid_form = self.is_regular('mos', base_word)
+              elif base_word[-1:] == 'd':
+                is_valid_form = self.is_regular('d', base_word)
 
-    if self.base_woord != self.word and self.infinitives:
-      if self.is_valid_form:
-        self.infinitives = iig_infinitives        
-    self.infinitives = list(set(self.infinitives))  
-
+              if iig_infinitives:       
+                infinitives = iig_infinitives
+    
+    infinitives = list(set(infinitives))
     # True, infinitives => this is a valid verbal form that can take enclitics
     # False, infinitives => this is a verbal form but it can't take enclitics
-    # False, no infinitives => this is not a verb
-    return
+    # False, no infinitives => this is not a verbal form
+    return is_valid_form, infinitives
+
+  def modify_structure(self, base_word, enclitics):
+    new_base_word = base_word + enclitics[0]     
+    new_enclitics = enclitics[1:]
+    return self.get_structure(new_base_word, new_enclitics)  
+
+  def get_structure(self, base_word, enclitics):
+    is_valid_form, infinitives = self.detect_verbs(base_word, enclitics)
+    if not infinitives:
+      if not enclitics:
+        return
+      else: 
+        self.modify_structure(base_word, enclitics)
+
+    else:
+      structure = Structure(is_valid_form, infinitives, enclitics)
+      self.structures.append(structure)
+      if enclitics and (not is_valid_form or
+      not structure.valid_comb):
+        self.modify_structure(base_word, enclitics)
+    return      
 
   def analyze_word(self):
-    #TODO: idos, comeros, comenos                 
-    print(u'Tu palabra es: {}.'.format(self.word.upper()))    
-    if len(self.last_syllables) == 1:
+    #TODO: idos, comeros, comenos, comemos                
+    print(u'Tu palabra es: {}.'.format(self.word.upper()))
+    last_syls = self.get_last(self.word, 2)   
+    if len(last_syls) == 1:
       print(u'\tTu palabra solo tiene una sílaba '
             u'y no puede tener enclíticos, intenta con otra palabra.')
       return
-    self.second_last, self.last = self.last_syllables
-    self.detect_enclitics()
-    self.detect_verbs()
-    if len(self.enclitics) == 2 and self.infinitives:
-      self.combination = Combination(''.join(self.enclitics))
+
+    base_word, enclitics = self.get_enclitics(last_syls)
+    self.get_structure(base_word, enclitics)
 
     self.print_results()
     return
 
   def print_results(self):
-    if not self.infinitives:
-      #TODO: if base_woord shorter than word, check word for verb (e.g.'trabajamos')
-
+    if not self.structures:
       print(u'\tParece que "{}" no es un verbo.'.
             format(self.word))
-
     else:
-      if self.enclitics == ['se'] and self.is_valid_form:
-        print(u'\tTienes un verbo con un pronombre enclítico "se" reflexivo: {}.'
-              .format(self.word))
-        return   
-      else:      
-        if len(self.infinitives) == 1:
-          print(u'\tTienes un verbo: {}.'.format(self.infinitives[0]))
-        else:
-          print(u'\tTienes un verbo que podría ser uno de los siguientes: {}.'
-                .format(', '.join(self.infinitives)))
-
-        
-      if not self.enclitics:
-        print(u'\tNo se han detectado enclíticos.')
-
-      else:
-        if len(self.enclitics) == 1:
-          print(u'\tTienes un enclítico de tipo complemento {}: {}.'.
-                format(self.PRONOUNS[self.last], self.last))
-
-        elif len(self.enclitics) == 2:
-          print(u"\tTienes dos enclíticos:")
-          if self.second_last == "se":
-            print(u"\t\tEl primero es un complemento {}: {}, "
-                  u"sustituyendo al pronombre 'le' o 'les'.".
-                  format(self.PRONOUNS[self.second_last], self.second_last))
-          else:
-            print(u"\t\tEl primero es un complemento {}: {}.".
-                  format(self.PRONOUNS[self.second_last], self.second_last))      
-          print(u"\t\tEl segundo es un complemento {}: {}.".
-                format(self.PRONOUNS[self.last], self.last))
-          print(self.combination.message)
-
-        if not self.is_valid_form:
-          print(u'\tSin embargo, te advertimos que los enclíticos '
-                u'deberían usarse solo con infinitivos, gerundios '
-                u'e imperativos. En algunas regiones, por ejemplo '
-                u'en Asturias, los pronombres pueden posponer al indicativo '
-                u'y subjuntivo, pero en el castellano estándar está en desuso.')
+      for num, structure in enumerate(self.structures):       
+        if len(self.structures) > 1:        
+          print(u'Opción {}.'.format(num+1))
+        elements = [(self.PRONOUNS[encl], encl) for encl in structure.enclitics]
+        elements = [item for element in elements for item in element]
+        print(structure.message.format(', '
+        .join(structure.infinitives), *elements))
+    return    
 
 
 def validate_word(word):
   word = word.strip()
   if not word.isalpha() or not word.find(' ') or word == '':
     print(u'Parece que no es una palabra.'
-          'Vuelve a intentar.')
+          u'Vuelve a intentar.')
     return
   else:
     Word(word).analyze_word()
   return
 
-validate_word(u'vámosnos')
-validate_word(u'robárlole')
-validate_word(u'vámonos')
-validate_word(u'dime')
-validate_word(u'preguntaros')
-validate_word(u'dárosla')
-validate_word(u'tomárselas')
-validate_word(u'pónselas')
 validate_word(u'pregúntatela')
-validate_word(u'sálvanos')
-validate_word(u'acercaros')
+validate_word(u'tomándoselas')
+validate_word(u'acércamelos')
+validate_word(u'robárlole')
+validate_word(u'mangárleles')
+validate_word(u'sacármete')
+validate_word(u'diciéndomese')
+validate_word(u'tomartete')
+validate_word(u'vámonos')
+validate_word(u'vámosnos')
+validate_word(u'dámosela')
+validate_word(u'dámossela')
 validate_word(u'acercaos')
+validate_word(u'acercados')
+validate_word(u'comedos')
+validate_word(u'dime')
 validate_word(u'seguirle')
-validate_word(u'seguirlo')
+validate_word(u'rompiéndonos')
+validate_word(u'fíjate')
 validate_word(u'irse')
-validate_word(u'celebrarse')
-validate_word(u'trabajo')
-validate_word(u'burros')
+validate_word(u'sumándose')
+validate_word(u'tirándonos')
+validate_word(u'preguntaros')
+validate_word(u'comeros')
+validate_word(u'vélale')
+validate_word(u'cómola')
+validate_word(u'preguntámostelo')
+validate_word(u'comemos')
+validate_word(u'desayuna')
+validate_word(u'bailamos')
+validate_word(u'cenan')
+validate_word(u'dfghdfhfghmela')
 validate_word(u'majos')
 validate_word(u'mala')
-validate_word(u'luz')
 validate_word(u'las')
 validate_word(u'verde')
 validate_word(u'123')
