@@ -349,9 +349,13 @@ while True:
     input = raw_input
   except NameError:
     pass
-    
+
   word = input(u'>>> ')
-  word = u"{}".format(word)
+  try:
+    word = unicode(word, 'utf-8')
+  except:
+    word = u"{}".format(word)
+    
   if word.upper() == u'QUIT':
     sys.exit()
   else:
