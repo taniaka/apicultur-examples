@@ -345,9 +345,13 @@ print(u'\nEscribe tu palabra aquí.'
       u'Si no quieres seguir, escribe QUIT.')
 
 while True:
+  try:
+    input = raw_input
+  except NameError:
+    pass
+    
   word = input(u'>>> ')
   word = u"{}".format(word)
-  print(word)
   if word.upper() == u'QUIT':
     sys.exit()
   else:
