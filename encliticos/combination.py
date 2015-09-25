@@ -40,16 +40,6 @@ class Combination:
         u"\tSi por lo menos uno de los enclíticos es de tercera persona, "
         u"el orden correcto es Objeto Indirecto - Objeto Directo."
     },
-    # {
-    #   'error_type': u'leísmo o reflexivo',
-    #   'cases': ['sele', 'seles'],
-    #   'message':
-    #     u'\tPuede ser un error de leísmo,' 
-    #     u'quizá quisiste acabarlo en uno de los siguientes '
-    #     u'pronombres: lo, la, los, las. O puede que tengas '
-    #     u'un verbo con un "se" reflexivo, recíproco o impersonal '
-    #     u'y un pronombre enclítico de complemente indirecto.'
-    # },
     {
       'error_type': u'OI 3ra con OD 1ra o 2da',
       'cases': ['leme', 'lete', 'lenos', 'leos'],
@@ -61,7 +51,7 @@ class Combination:
       'error_type': u'leísmo',
       'cases': [
         'lesle', 'leles', 'lese', 'lesse'
-      #TODO special case for lese, seles?
+      #TODO special case for lese, lesse?
       ],
       'message':
         u"\tNo se pueden combinar dos pronombres indirectos."
@@ -108,7 +98,6 @@ class Combination:
     if not self.is_valid:
       for group in self.INVALID_COMBINATIONS:
         if combination in group['cases']:
-          self.error =  group['error_type']
           self.message = u'\t{}\n{}'.format(
                           self.INVALID_MESSAGE, group['message'])
           break
