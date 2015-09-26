@@ -19,6 +19,13 @@ class Word:
   APICULTUR = ApiculturRateLimitSafe(ACCESS_TOKEN, "example")
 
   def __init__(self, word):
+    word.strip()
+    try:
+      assert word.isalpha()
+    except AssertionError:
+      print(u'Parece que no es una palabra.'
+          u'Vuelve a intentar.\n')
+      raise ValueError(u'No es una cadena')
     self.word = word
     self.syllables = self.syllabize()
     self.structures = []
