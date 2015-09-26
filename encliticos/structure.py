@@ -139,18 +139,18 @@ class Structure:
     #return (can it be reflexive, is it always reflexive)
     return (False, False)
 
-  def is_regular(self, part, base_word):
-    #mark vámosnos, démossela y marchados as irregular form
-    #TODO disambiguate marchados
-    parts = {'mos': ['nos', 'se'], 'd': ['os']}
-    try:
-      encls = parts[part]
-    except:
-      return True
-    for encl in encls:
-      if self.word.rfind(part+encl) != -1 and self.word != 'idos':
-        return False
-    return True 
+  # def is_regular(self, part, base_word):
+  #   #mark vámosnos, démossela y marchados as irregular form
+  #   #TODO disambiguate marchados
+  #   parts = {'mos': ['nos', 'se'], 'd': ['os']}
+  #   try:
+  #     encls = parts[part]
+  #   except:
+  #     return True
+  #   for encl in encls:
+  #     if self.word.rfind(part+encl) != -1 and self.word != 'idos':
+  #       return False
+  #   return True 
 
   def print_message(self):
     

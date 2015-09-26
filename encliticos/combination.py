@@ -98,6 +98,7 @@ class Combination:
     if not self.is_valid:
       for group in self.INVALID_COMBINATIONS:
         if combination in group['cases']:
+          self.error = group['error_type']
           self.message = u'\t{}\n{}'.format(
                           self.INVALID_MESSAGE, group['message'])
           break

@@ -23,15 +23,14 @@ class Word:
     try:
       assert word.isalpha()
     except AssertionError:
-      print(u'Parece que no es una palabra.'
+      raise ValueError(u'Parece que no es una palabra.'
           u'Vuelve a intentar.\n')
-      raise ValueError(u'No es una cadena')
     self.word = word
-    self.syllables = self.syllabize()
+    self.syllables = self.syllabicate()
     self.structures = []
 
 
-  def syllabize(self):
+  def syllabicate(self):
     syllabized = self.APICULTUR.silabeame(word=self.word)
     syls = syllabized['palabraSilabeada'].split('=')
     if len(syls) > 1:
@@ -162,15 +161,16 @@ class Word:
           new_base_word, new_enclitics = self.modify_structure(base_word, enclitics)
           self.get_structure(new_base_word, new_enclitics)                
 
-  def get_enclitics(self, second_last, last):
+  def get_enclitics(self):
     base_word = self.word
     enclitics = []
+    prelast, last = self.syllables[-2], self.syllables[-1]
     length = len(self.syllables)
     if last in self.PRONOUNS:
       enclitics.append(last)
       if length > 2:
-        if second_last in self.PRONOUNS:
-          enclitics.insert(0,second_last)
+        if prelast in self.PRONOUNS:
+          enclitics.insert(0, prelast)
 
     if enclitics:
       base_syls = self.syllables[:-len(enclitics)]
@@ -186,8 +186,7 @@ class Word:
       print(u'\tTu palabra solo tiene una sílaba y no puede'
             u'tener enclíticos, intenta con otra palabra.')
       return
-    prelast, last = self.syllables[-2], self.syllables[-1]
-    base_word, enclitics = self.get_enclitics(prelast, last)
+    base_word, enclitics = self.get_enclitics()
     self.get_structure(base_word, enclitics)
     self.print_results()
 
