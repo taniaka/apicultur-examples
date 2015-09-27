@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import unittest
+
+import sys
+import os.path
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
+
 from encliticos.word import Word
 from encliticos.structure import Structure
 from encliticos.combination import Combination
@@ -14,20 +18,27 @@ class CombinationTests(unittest.TestCase):
     combinations is determined correctly.
   """
   def setUp(self):
-    self.sela = Combination(u'sela')
-    self.melos = Combination(u'melos')
-    self.lale = Combination(u'lale')
-    self.mete = Combination(u'mete')
+    self.sela = Combination([u'se', u'la'])
+    self.melos = Combination([u'me', u'los'])
+    self.lale = Combination([u'la', u'le'])
+    self.mete = Combination([u'me', u'te'])
+    self.setela = Combination([u'se', u'te', u'la'])
+    self.setele = Combination([u'se', u'te', u'le'])
+    self.selame = Combination([u'se', u'la', u'me'])
 
   def test_valid_combination(self):
     self.assertTrue(self.sela.is_valid)
     self.assertTrue(self.melos.is_valid)
+    self.assertTrue(self.setela.is_valid)
     self.assertFalse(self.lale.is_valid)
     self.assertFalse(self.mete.is_valid)
+    self.assertFalse(self.setele.is_valid)
+    self.assertFalse(self.selame.is_valid)
 
   def test_error_type(self):
     self.assertEqual(self.lale.error, u'orden OD OI incorrecto')
     self.assertEqual(self.mete.error, u'1ra persona delante de la 2da')
+    self.assertEqual(self.setele.error, None)
 
 
 class StructureTests(unittest.TestCase):
@@ -76,6 +87,24 @@ class StructureTests(unittest.TestCase):
       }],
       []
     )
+    self.tomarsemelos = Structure(
+      True,
+      [{
+      "lema": "tomar",
+      "categoria": "VMN0000"
+        }
+      ],
+      ['se', 'me', 'los']
+    )
+    self.tomarselosme = Structure(
+      True,
+      [{
+      "lema": "tomar",
+      "categoria": "VMN0000"
+        }
+      ],
+      ['se', 'los', 'me']
+    )
 
   def test_has_combination(self):
     self.assertIsInstance(self.preguntaselo.combination, Combination)
@@ -91,6 +120,7 @@ class StructureTests(unittest.TestCase):
     self.assertEqual(self.preguntaselo.reflexive, (False, False))
     self.assertEqual(self.tomandote.reflexive, (True, False))
     self.assertEqual(self.damosnos.reflexive, (True, True))
+    self.assertEqual(self.tomarsemelos.reflexive, (True, True))
 
 
 class WordTests(unittest.TestCase):
@@ -99,47 +129,53 @@ class WordTests(unittest.TestCase):
   """
 
   def setUp(self):
-    self.los = Word('los')
-    self.comer = Word('comer')
-    self.dimelo = Word('dímelo')
-    self.dimelo_wrong = Word('dimelo')
-    self.tomaroslo = Word('tomároslo')
-    self.tomaroslo_wrong = Word('tómaroslo')
-    self.acentuamelo_wrong = Word('acentuamelo')
-    self.darlole = Word('darlole')
-    self.renidos = Word('reñidos')
-    self.comeos = Word('comeos')
-    self.vamonos = Word('vámonos')
-    self.vamosnos = Word('vámosnos')
-    self.demosela = Word('démosela')
+    self.los = Word(u'los')
+    self.comer = Word(u'comer')
+    self.dimelo = Word(u'dímelo')
+    self.dimelo_wrong = Word(u'dimelo')
+    self.tomaroslo = Word(u'tomároslo')
+    self.tomaroslo_wrong = Word(u'tómaroslo')
+    self.acentuamelo_wrong = Word(u'acentuamelo')
+    self.darlole = Word(u'darlole')
+    self.renidos = Word(u'reñidos')
+    self.comeos = Word(u'comeos')
+    self.vamonos = Word(u'vámonos')
+    self.vamosnos = Word(u'vámosnos')
+    self.demosela = Word(u'démosela')
+    self.tomarosmela = Word(u'tomárosmela')
+    self.tomarososla = Word(u'tomárososla')
 
     # self.vamosnos.analyze_word()
 
   def test_bad_value(self):
     with self.assertRaises(ValueError):
-      Word('dime12')
+      Word(u'dime12')
     with self.assertRaises(ValueError):
-      Word('dime lo')
+      Word(u'dime lo')
     with self.assertRaises(ValueError):
-      Word('')  
+      Word(u'')  
 
   def test_syls_number(self):
     self.assertEqual(len(self.los.syllables), 1)
     self.assertEqual(len(self.tomaroslo.syllables), 4)
 
   def test_modify_ros_dos(self):
-    self.assertEqual(self.tomaroslo.syllables[-2], 'os')
-    self.assertEqual(self.renidos.syllables[-1], 'os')
+    self.assertEqual(self.tomaroslo.syllables[-2], u'os')
+    self.assertEqual(self.renidos.syllables[-1], u'os')
+    self.assertEqual(self.tomarosmela.syllables, 
+                    [u'to',u'már', u'os', u'me', u'la'])
+    self.assertEqual(self.tomarososla.syllables, 
+                    [u'to', u'már', u'os', u'os', u'la'])
 
   def test_get_enclitics(self):
     self.assertEqual(self.demosela.get_enclitics(),
-                        ('démo', ['se', 'la']))
+                        (u'démo', [u'se', u'la']))
     self.assertEqual(self.renidos.get_enclitics(),
-                    ('reñid', ['os']))
+                    (u'reñid', [u'os']))
     self.assertEqual(self.acentuamelo_wrong.get_enclitics(),
-                        ('acentua', ['me', 'lo']))
+                        (u'acentua', [u'me', u'lo']))
     self.assertEqual(self.comer.get_enclitics(),
-                        ('comer', []))
+                        (u'comer', []))
 
   def test_irregular(self):
     pass

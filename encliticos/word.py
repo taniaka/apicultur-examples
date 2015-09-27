@@ -23,47 +23,41 @@ class Word:
     try:
       assert word.isalpha()
     except AssertionError:
-      raise ValueError(u'Parece que no es una palabra.'
-          u'Vuelve a intentar.\n')
+      raise ValueError(u'Parece que no es una palabra. Vuelve a intentar.\n')
     self.word = word
     self.syllables = self.syllabicate()
     self.structures = []
 
 
   def syllabicate(self):
-    syllabized = self.APICULTUR.silabeame(word=self.word)
-    syls = syllabized['palabraSilabeada'].split('=')
-    if len(syls) > 1:
-      if set([syls[-2], syls[-1]]).intersection(
-                                  ['dos', 'ros', 'do', 'ro']):
-        syls = self.modify_syllables(syls)
+    syllabicated = self.APICULTUR.silabeame(word=self.word)
+    syls = syllabicated['palabraSilabeada'].split('=')
+    length = len(syls)
+    if length > 1:  
+      syls = self.modify_syllables(syls)
     return syls
 
   def modify_syllables(self, syls):
-    prelast, last = syls[-2], syls[-1]
-    #casos 'tomaros', 'plumeros', 'tomados'
-    if last in ['dos', 'ros']:
-      syls[-2] += last[0]
-      syls[-1] = 'os'
-    else:
-      if len(syls) >= 3:  
-        #caso 'tomárosla'
-        if prelast in ['dos', 'ros']:
-          syls[-3] += prelast[0]
-          syls[-2] = 'os'
-        #caso 'tomárosos'
-        elif prelast in ['do', 'ro'] and last == 'sos':
-          syls[-3] += prelast[0]
-          syls[-2], syls[-1] = 'os', 'os'
-    return syls
+    num = 3
+    if len(syls) == 2:
+      num = 2
+    for n in range(num):
+      i = -(n+1)
+      #casos 'tomaros','tomárosla','tomárosmela'
+      if syls[i] in ['dos', 'ros']:
+        try:
+          syls[i-1] += syls[i][0]
+        except IndexError:
+          pass
+        else:  
+          syls[i] = 'os'
+      #casos'tomárosos', 'tomárososla'
+      elif syls[i] == 'sos':
+        if (1-i) < len(syls) and syls[i-1] in ['do', 'ro']:
+          syls[i-2] += syls[i-1][0]
+          syls[i-1], syls[i] = 'os', 'os'
 
-    
-    #       #TODO remove repetition
-    #       if base_word != self.word and infinitives:
-    #         if base_word[-3:] == 'mos':
-    #           regular = self.is_regular('mos', base_word)
-    #         elif base_word[-1:] == 'd':
-    #           regular = self.is_regular('d', base_word)
+    return syls
 
 
   def swap_stress(self, word, keys, values):
@@ -156,7 +150,7 @@ class Word:
       #TODO si la nueva estructura es correcta, eliminar la anterior
       self.structures.append(structure)
       if enclitics:
-       if not structure.valid or (structure.type == 'combination' and
+       if not structure.valid or (len(enclitics) >= 2 and
        not structure.combination.is_valid):
           new_base_word, new_enclitics = self.modify_structure(base_word, enclitics)
           self.get_structure(new_base_word, new_enclitics)                
@@ -166,11 +160,16 @@ class Word:
     enclitics = []
     prelast, last = self.syllables[-2], self.syllables[-1]
     length = len(self.syllables)
+    #TODO shorten?
     if last in self.PRONOUNS:
       enclitics.append(last)
       if length > 2:
         if prelast in self.PRONOUNS:
           enclitics.insert(0, prelast)
+          if length > 3:
+            preprelast = self.syllables[-3]
+            if preprelast in self.PRONOUNS:
+              enclitics.insert(0, preprelast)
 
     if enclitics:
       base_syls = self.syllables[:-len(enclitics)]

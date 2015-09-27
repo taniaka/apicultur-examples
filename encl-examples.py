@@ -7,9 +7,14 @@ from encliticos.word import Word
 
 if __name__ == '__main__':
 
+  Word(u'acércamelos').analyze_word()
+  Word(u'acentuamelose').analyze_word()
+  Word(u'tomársemela').analyze_word()
+  Word(u'tomándosemele').analyze_word()
+  Word(u'ponganselasme').analyze_word()
+  Word(u'acentúaseseme').analyze_word()
   Word(u'pregúntatela').analyze_word()
   Word(u'tomándoselas').analyze_word()
-  Word(u'acércamelos').analyze_word()
   Word(u'robárlole').analyze_word()
   Word(u'mangárleles').analyze_word()
   Word(u'sacármete').analyze_word()

@@ -15,8 +15,6 @@ class Structure:
 
   APICULTUR = ApiculturRateLimitSafe(ACCESS_TOKEN, "example")
 
-  STRUCTURE_TYPES = ('no_encl', 'one_encl', 'combination')
-
   PRONOUNS =  {
     'la':  'complemento directo',
     'las': 'complemento directo',
@@ -43,23 +41,29 @@ class Structure:
     },
     'regular' : {
       True : u'',
-      False: u'\t Sin embargo...(explicar por qué vamosnos o demossela o tomados son incorrectos).\n'
+      False: u'\t Sin embargo...(explicar por qué vamosnos o demossela '
+             u'o tomados son incorrectos).\n'
     }
   }
 
-  ENC_MESSAGES = {
-    'combination':  u'\tTienes dos enclíticos:\n'\
-                    u'\t\tEl primero es un {}: {}.\n'\
-                    u'\t\tEl segundo es un {}: {}.',
+  ENC_MESSAGES = [u'\tNo se han detectado enclíticos.',
 
-    'one_encl': u'\tTienes un enclítico de tipo {}: {}.',
-    'no_encl': u'\tNo se han detectado enclíticos.'
-  }
+                  u'\tTienes un enclítico de tipo {}: {}.',
+
+                  u'\tTienes dos enclíticos:\n'\
+                  u'\t\tEl primero es un {}: {}.\n'\
+                  u'\t\tEl segundo es un {}: {}.',
+
+                  u'\tTienes tres enclíticos:\n'\
+                  u'\t\tEl primero es un {}: {}.\n'\
+                  u'\t\tEl segundo es un {}: {}.\n'
+                  u'\t\tEl tercero es un {}: {}.'
+
+  ]
 
   def __init__(self, is_regular, lemas, enclitics):
     self.lemas = lemas
     self.enclitics = enclitics
-    self.type = self.STRUCTURE_TYPES[len(enclitics)]
     self.valid = False
 
     self.infinitives, self.pers, self.num = self.get_forms()
@@ -67,8 +71,8 @@ class Structure:
     self.is_regular = is_regular
 
     self.combination = None
-    if self.type == 'combination':     
-      self.combination = Combination(''.join(enclitics))
+    if len(enclitics) >= 2:     
+      self.combination = Combination(enclitics)
 
   def get_forms(self):
     iig_infinitives = [] #infinitives for inf, imp and ger forms
@@ -112,19 +116,23 @@ class Structure:
     if first == 'se':
       if length == 1:
         return (True, True)
-      elif length == 2:
+      elif length >= 2:
         second = self.enclitics[1]
-        if not self.pers:
-          if second in ['la', 'lo', 'las', 'los']:
-            return (True, False)
+        if length == 2:
+          if not self.pers:
+            if second in ['la', 'lo', 'las', 'los']:
+              return (True, False)
+            else:
+              return (True, True)
           else:
-            return (True, True)
+            if '3' in self.pers:
+              return (True, False)
         else:
-          if '3' in self.pers:
-            return (True, False)
+          return (True, True)
+              
         #TODO mark acerquémosele as invalid combination.
 
-    elif first in ['me', 'te', 'nos', 'os']:
+    elif first in ['me', 'te', 'nos', 'os'] and length != 3:
       if not self.pers:
         return (True, False)
       else:
@@ -139,34 +147,26 @@ class Structure:
     #return (can it be reflexive, is it always reflexive)
     return (False, False)
 
-  # def is_regular(self, part, base_word):
-  #   #mark vámosnos, démossela y marchados as irregular form
-  #   #TODO disambiguate marchados
-  #   parts = {'mos': ['nos', 'se'], 'd': ['os']}
-  #   try:
-  #     encls = parts[part]
-  #   except:
-  #     return True
-  #   for encl in encls:
-  #     if self.word.rfind(part+encl) != -1 and self.word != 'idos':
-  #       return False
-  #   return True 
-
   def print_message(self):
-    
+    length = len(self.enclitics)
     message = u'\tTienes un verbo que puede ser uno de los siguientes: {}.\n'
-    if self.type != 'no_encl':
+    if length >= 1:
       message += (self.VERB_MESSAGES['valid'][self.valid]
               + self.VERB_MESSAGES['regular'][self.is_regular])
  
-    message += self.ENC_MESSAGES[self.type]
+    message += self.ENC_MESSAGES[length]
     elms = [(self.PRONOUNS[encl], encl) for encl in self.enclitics]
     elms = [item for elm in elms for item in elm]
-    if self.type == 'combination':     
+    if length >= 2:     
       #if comb is valid, 1st encl is indir and 2nd one is dir
-      if self.combination.is_valid and ''.join(self.enclitics) not in ['sele', 'seles']:
-        elms[0] = u'complemento indirecto'
-        elms[2] = u'complemento directo'
+      if (self.combination.is_valid and 
+                ''.join(self.enclitics) not in ['sele', 'seles']):
+        elms[-4] = u'complemento indirecto'
+        elms[-2] = u'complemento directo'
+      if length == 3 and self.enclitics[0] == 'se':
+        elms[0] = 'pronombre reflexivo '  
+
+
       message += self.combination.message
 
     if self.reflexive == (True, True):
