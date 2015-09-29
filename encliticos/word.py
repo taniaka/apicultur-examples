@@ -151,7 +151,7 @@ class Word:
       self.structures.append(structure)
       if enclitics:
        if not structure.valid or (len(enclitics) >= 2 and
-       not structure.combination.is_valid):
+        structure.combination.error):
           new_base_word, new_enclitics = self.modify_structure(base_word, enclitics)
           self.get_structure(new_base_word, new_enclitics)                
 
@@ -179,25 +179,14 @@ class Word:
 
 
   def analyze_word(self):
-    print(u'\nTu palabra es: {}.'.format(self.word.upper()))
-
-    if len(self.syllables) < 2:
-      print(u'\tTu palabra solo tiene una sílaba y no puede'
-            u'tener enclíticos, intenta con otra palabra.')
-      return
-    base_word, enclitics = self.get_enclitics()
+    try:
+      base_word, enclitics = self.get_enclitics()
+    except IndexError:
+      raise ValueError(u'\tTu palabra solo tiene una sílaba y no puede'
+                       u'tener enclíticos, intenta con otra palabra.')
     self.get_structure(base_word, enclitics)
-    self.print_results()
 
-  def print_results(self):
-    if not self.structures:
-      print(u'\tParece que "{}" no es un verbo.'.
-            format(self.word))
-    else:
-      for num, structure in enumerate(self.structures):       
-        if len(self.structures) > 1:        
-          print(u'Opción {}.'.format(num+1))
-        structure.print_message()
+
         # if self.word != self.accentuated:
         #   print(u'\t\t¿Estás seguro de no haberte equivocado '
         #         u'con los acentos? ¿Quizá quisiste decir "{}"?'

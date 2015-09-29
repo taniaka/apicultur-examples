@@ -159,7 +159,7 @@ class Structure:
     elms = [item for elm in elms for item in elm]
     if length >= 2:     
       #if comb is valid, 1st encl is indir and 2nd one is dir
-      if (self.combination.is_valid and 
+      if (not self.combination.error and 
                 ''.join(self.enclitics) not in ['sele', 'seles']):
         elms[-4] = u'complemento indirecto'
         elms[-2] = u'complemento directo'

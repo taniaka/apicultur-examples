@@ -14,31 +14,20 @@ from encliticos.combination import Combination
 
 class CombinationTests(unittest.TestCase):
   """
-    Test to check whether the validity of the enclitics
-    combinations is determined correctly.
+    Tests to check that the get_error() function of
+    the Combination class returns the correct values.
   """
-  def setUp(self):
-    self.sela = Combination([u'se', u'la'])
-    self.melos = Combination([u'me', u'los'])
-    self.lale = Combination([u'la', u'le'])
-    self.mete = Combination([u'me', u'te'])
-    self.setela = Combination([u'se', u'te', u'la'])
-    self.setele = Combination([u'se', u'te', u'le'])
-    self.selame = Combination([u'se', u'la', u'me'])
 
   def test_valid_combination(self):
-    self.assertTrue(self.sela.is_valid)
-    self.assertTrue(self.melos.is_valid)
-    self.assertTrue(self.setela.is_valid)
-    self.assertFalse(self.lale.is_valid)
-    self.assertFalse(self.mete.is_valid)
-    self.assertFalse(self.setele.is_valid)
-    self.assertFalse(self.selame.is_valid)
+    valid_combinations = [[u'se', u'la'], [u'me', u'los'],
+                          [u'se', u'te', u'la']]
+    for cb in valid_combinations:
+      self.assertIsNone(Combination(cb).error)
 
-  def test_error_type(self):
-    self.assertEqual(self.lale.error, u'orden OD OI incorrecto')
-    self.assertEqual(self.mete.error, u'1ra persona delante de la 2da')
-    self.assertEqual(self.setele.error, None)
+    invalid_combinations = [[u'me', u'te'], [u'se', u'la', u'me'],
+                            [u'la', u'te', u'los']]
+    for cb in invalid_combinations:
+       self.assertIsNotNone(Combination(cb).error)
 
 
 class StructureTests(unittest.TestCase):
@@ -145,15 +134,15 @@ class WordTests(unittest.TestCase):
     self.tomarosmela = Word(u'tomárosmela')
     self.tomarososla = Word(u'tomárososla')
 
-    # self.vamosnos.analyze_word()
 
   def test_bad_value(self):
+    bad_values = [u'dime12', u'dime lo', u'']
+    for value in bad_values:
+      with self.assertRaises(ValueError):
+        Word(value)
+
     with self.assertRaises(ValueError):
-      Word(u'dime12')
-    with self.assertRaises(ValueError):
-      Word(u'dime lo')
-    with self.assertRaises(ValueError):
-      Word(u'')  
+      Word(u'las').analyze_word()  
 
   def test_syls_number(self):
     self.assertEqual(len(self.los.syllables), 1)
