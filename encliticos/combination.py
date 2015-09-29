@@ -3,121 +3,68 @@
 
 class Combination:
 
-  # VALID_COMBINATIONS = (
-  #     'melo', 'mela', 'melos', 'melas',
-  #     'telo', 'tela', 'telos', 'telas',
-  #     'teme', 'tenos',
-  #     'selo', 'sela', 'selos', 'selas',
-  #     'sele', 'seles',
-  #     'noslo', 'nosla', 'noslos', 'noslas',
-  #     'oslo', 'osla', 'oslos', 'oslas',
-  #     'osme', 'osnos'
-  # )
 
-  INVALID_COMBINATIONS =  {
-    'two_encls':(
-      {
-        'cases': [
-          'lelo', 'lela', 'lelos',
-          'lelas', 'leslo', 'lesla', 'leslos', 'leslas'
-        ],
-        'error': u'le por se',
-        'message':
-          u"\tCuando 'le' o 'les' se juntan "
-          u"con un complemento directo siempre "
-          u"se cambian por 'se'."
-      },
+  ENCLITICS = ('se', 'te', 'os', 'me', 'nos',
+              'le', 'les', 'lo', 'la', 'los', 'las')
 
-      {
-        'cases': [
-          'lale', 'lole', 'lasle', 'losle',
-          'loles', 'loles', 'lasles', 'losles',
-          'losle', 'lose', 'losse', 'lasse',
-          'lame', 'late', 'lanos', 'laos',
-          'lasme', 'laste', 'lasnos', 'lasos',
-          'lome', 'lote', 'lonos', 'loos',
-          'mele', 'meles', 'tele', 'teles',
-          'mese', 'nosse', 'tese', 'osse',
-          'nosle', 'nosles', 'osle', 'osles'
-        ],
-        'error': u'orden OD OI incorrecto',
-        'message':
-          u"\tSi por lo menos uno de los enclíticos es de tercera persona, "
-          u"el orden correcto es Objeto Indirecto - Objeto Directo."
-      },
-      {
-        'cases': ['leme', 'lete', 'lenos', 'leos'],
-        'error': u'OI 3ra con OD 1ra o 2da',
-        'message':
-          u"\tSi los dos enclíticos son de tercera persona, "
-          u"el orden correcto es Objeto Indirecto - Objeto Directo."
-      },
-      {
-        'cases': [
-          'lesle', 'leles', 'lese', 'lesse'
-        #TODO special case for lese, lesse?
-        ],
-        'error': u'leísmo',
-        'message':
-          u"\tNo se pueden combinar dos pronombres indirectos."
-      },     
-      {
-        'cases': ['mete', 'meos', 'noste', 'nosos'],
-        'error': u'1ra persona delante de la 2da',
-        'message':
-          u'\tLa segunda persona tiene que '
-          u'ir delante de la primera.'
-      },
-      {
-        'cases': ['nosme', 'menos', 'oste', 'teos'],
-        'error': u'Dos enclíticos de la misma persona',
-        'message':
-          u'\tNo se pueden combinar enclíticos '
-          u'de la misma persona gramatical entre ellos, '
-          u'salvo que sean de la tercera persona.'
-      },
-      {
-        'cases':[
-          'meme', 'tete', 'lala','lolo', 'sese',
-          'nosnos','osos','laslas','loslos', 'lesles', 'lele'
-        ],
-        'error': u'Se repite el mismo pronombre',
-        'message': u'\tNo se puede repetir el mismo pronombre.'
-      }
-    ),
+  # no funciona:
+  # Matrix = [['A' for encl in ENCLITICS] for encl in ENCLITICS]
 
-    'three_encls': {
-        'error': 'Error de combinación de 3 enclíticos.',
-        'message': 'Explicar los errores específicos para 3 enclíticos.'
-    }
-    
+  Matrix = [['A' for i in range(11)] for i in range(11)]
+
+  for x in range(5):
+    Matrix[x][x] = 'R'
+
+  for y in range(1,11):
+    Matrix[0][y] = None
+
+  for x in range(1,5):
+    for y in range(7,11):
+      Matrix[x][y] = None
+
+  for x in range(1,5):
+    for y in range(5,7):
+      Matrix[x][y] = 'I'
+  
+  for x in range(1,3):
+    for y in range(3,5):
+      Matrix[x][y] = 'I'    
+
+  for x in range(5,11):
+    for y in range(5,11):
+      Matrix[x][y] = 'X'
+
+  Matrix[1][2] = 'P'
+  Matrix[2][1] = 'P'
+  Matrix[3][4] = 'P'
+  Matrix[4][3] = 'P'
+
+  ERRORS = {
+    None: u'\n\tTu combinación es válida (explicar por qué).',
+    'I':  u'\n\tTu combinación puede ser un leísmo o puede '
+          u'tener un dativo ético (explicar). ',
+    'A':  u'\n\tTu combinación es inválida, alteración de orden. ',
+    'R':  u'\n\tNo se puede repetir el mismo enclítico. ',
+    'P':  u'\n\tNo se pueden combinar dos primeras o dos '
+          u'segundas personas. ',
+    'X':  u'\n\tCombinación inválida de dos terceras personas. ',
+    'T':  u'\n\tEstá combinación no es válida. '
+          u'Mensaje explicando cómo combinar 3 enclíticos. '
+
   }
-  #TODO acércasele!!!!!!!!!!!!!!
 
-  # VALIDITY_MESSAGE = {
-  #   True: [ u"\n\tAquí tendremos un mensaje explicando "\
-  #           u"por qué esta combinación es válida y cómo "\
-  #           u"hay que combinar dos enclíticos.",
-  #           u"\n\tMensaje explicando por qué esta combinación "\
-  #           u"es correcta y cómo combinar 3 enclíticos"
-  #   ],
-  #   False: [u"\n\tSin embargo, esta combinación no es válida.",
-  #           u"\n\tEsta combinación no es válida. "\
-  #           u"Mensaje sobre cómo combinar 3 enclíticos."
-  #   ]
-  # }
 
-  VALID_MESSAGE = [ u"\n\tAquí tendremos un mensaje explicando "\
-                    u"por qué esta combinación es válida y cómo "\
-                    u"hay que combinar dos enclíticos.",
-                    u"\n\tMensaje explicando por qué esta combinación "\
-                    u"es correcta y cómo combinar 3 enclíticos"
-  ]                  
+  # VALID_MESSAGE = [ u"\n\tAquí tendremos un mensaje explicando "\
+  #                   u"por qué esta combinación es válida y cómo "\
+  #                   u"hay que combinar dos enclíticos.",
+  #                   u"\n\tMensaje explicando por qué esta combinación "\
+  #                   u"es correcta y cómo combinar 3 enclíticos"
+  # ]                  
 
-  INVALID_MESSAGE =[u"\n\tSin embargo, esta combinación no es válida.\n\t",
-                    u"\n\tEsta combinación no es válida. "\
-                    u"\n\tMensaje sobre cómo combinar 3 enclíticos.\n\t"
-  ]                  
+  # INVALID_MESSAGE =[u"\n\tSin embargo, esta combinación no es válida.\n\t",
+  #                   u"\n\tEsta combinación no es válida. "\
+  #                   u"\n\tMensaje sobre cómo combinar 3 enclíticos.\n\t"
+  # ]                  
                         
 
   def __init__(self, combination):    
@@ -125,25 +72,21 @@ class Combination:
     self.error, self.message = self.get_error()
 
   def get_error(self):
-    last_two = ''.join(self.combination[-2:])
-    length = len(self.combination)
-    error = None
-    message = self.VALID_MESSAGE[length-2]
+    last_two = self.combination[-2:]
+    prelast = self.ENCLITICS.index(last_two[0])
+    last = self.ENCLITICS.index(last_two[1])
+    error = self.Matrix[prelast][last]
+    message = self.ERRORS[error]
 
-    for group in self.INVALID_COMBINATIONS['two_encls']:
-      if last_two in group['cases']:
-        error = group['error']
-        message = self.INVALID_MESSAGE[length-2] + group['message']
-
-    if length == 3:
+    if len(self.combination) == 3:
       first = self.combination[0]
       if first not in ['se', 'me', 'te', 'nos', 'os'] or first in last_two:
-        three_invalid = self.INVALID_COMBINATIONS['three_encls']
         if not error:
-          error = three_invalid['error']
-          message = self.INVALID_MESSAGE[1]
-        message += three_invalid['message']
-
+          error = 'T'
+          message = ''
+        else:
+          message += 'Además tienes otro problema.'  
+        message += self.ERRORS['T']
     return error, message
 
 

@@ -1,0 +1,217 @@
+  # VALID_COMBINATIONS = (
+  #     'melo', 'mela', 'melos', 'melas',
+  #     'telo', 'tela', 'telos', 'telas',
+  #     'teme', 'tenos',
+  #     'selo', 'sela', 'selos', 'selas',
+  #     'sele', 'seles',
+  #     'noslo', 'nosla', 'noslos', 'noslas',
+  #     'oslo', 'osla', 'oslos', 'oslas',
+  #     'osme', 'osnos'
+  # )
+
+  INVALID_COMBINATIONS =  {
+    'two_encls':(
+      {
+        'cases': [
+          'lelo', 'lela', 'lelos',
+          'lelas', 'leslo', 'lesla', 'leslos', 'leslas'
+        ],
+        'error': u'le por se',
+        'message':
+          u"\tCuando 'le' o 'les' se juntan "
+          u"con un complemento directo siempre "
+          u"se cambian por 'se'."
+      },
+
+      {
+        'cases': [
+          'lale', 'lole', 'lasle', 'losle',
+          'loles', 'loles', 'lasles', 'losles',
+          'losle', 'lose', 'losse', 'lasse',
+          'lame', 'late', 'lanos', 'laos',
+          'lasme', 'laste', 'lasnos', 'lasos',
+          'lome', 'lote', 'lonos', 'loos',
+          'mele', 'meles', 'tele', 'teles',
+          'mese', 'nosse', 'tese', 'osse',
+          'nosle', 'nosles', 'osle', 'osles'
+        ],
+        'error': u'orden OD OI incorrecto',
+        'message':
+          u"\tSi por lo menos uno de los enclíticos es de tercera persona, "
+          u"el orden correcto es Objeto Indirecto - Objeto Directo."
+      },
+      {
+        'cases': ['leme', 'lete', 'lenos', 'leos'],
+        'error': u'OI 3ra con OD 1ra o 2da',
+        'message':
+          u"\tSi los dos enclíticos son de tercera persona, "
+          u"el orden correcto es Objeto Indirecto - Objeto Directo."
+      },
+      {
+        'cases': [
+          'lesle', 'leles', 'lese', 'lesse'
+        #TODO special case for lese, lesse?
+        ],
+        'error': u'leísmo',
+        'message':
+          u"\tNo se pueden combinar dos pronombres indirectos."
+      },     
+      {
+        'cases': ['mete', 'meos', 'noste', 'nosos'],
+        'error': u'1ra persona delante de la 2da',
+        'message':
+          u'\tLa segunda persona tiene que '
+          u'ir delante de la primera.'
+      },
+      {
+        'cases': ['nosme', 'menos', 'oste', 'teos'],
+        'error': u'Dos enclíticos de la misma persona',
+        'message':
+          u'\tNo se pueden combinar enclíticos '
+          u'de la misma persona gramatical entre ellos, '
+          u'salvo que sean de la tercera persona.'
+      },
+      {
+        'cases':[
+          'meme', 'tete', 'lala','lolo', 'sese',
+          'nosnos','osos','laslas','loslos', 'lesles', 'lele'
+        ],
+        'error': u'Se repite el mismo pronombre',
+        'message': u'\tNo se puede repetir el mismo pronombre.'
+      }
+    ),
+
+    'three_encls': {
+        'error': 'Error de combinación de 3 enclíticos.',
+        'message': 'Explicar los errores específicos para 3 enclíticos.'
+    }
+    
+  }
+  #TODO acércasele!!!!!!!!!!!!!!
+
+  # VALIDITY_MESSAGE = {
+  #   True: [ u"\n\tAquí tendremos un mensaje explicando "\
+  #           u"por qué esta combinación es válida y cómo "\
+  #           u"hay que combinar dos enclíticos.",
+  #           u"\n\tMensaje explicando por qué esta combinación "\
+  #           u"es correcta y cómo combinar 3 enclíticos"
+  #   ],
+  #   False: [u"\n\tSin embargo, esta combinación no es válida.",
+  #           u"\n\tEsta combinación no es válida. "\
+  #           u"Mensaje sobre cómo combinar 3 enclíticos."
+  #   ]
+  # }
+
+
+1. Get an input from the user.
+2. Pass the word to validate_word().
+  - If the word is an empty string  or has white spaces or has
+    non alpha characters an error message is returned.
+  - If not, a Word class instance is created and its analyze_word() method is called.
+3.analyze_word()
+  - prints the word
+  - calls get_last()
+  4.get_last()
+    - divides the word into syllables with Apicultur's silabeador
+    and returns the last two syllables.
+  - if the word has only one syllable, prints an error message
+    and stops the script.
+  - if not, calls the get_enclitics() method.
+  5. get_enclitics()
+    - checks whether the last sylables are valid pronouns
+      and if so adds them to the enclitics list
+    - if less than 2 enclitics have been detected, checks
+      for 'special' cases where the division into syllables 
+      doesn't correspond to the division into enclitics 
+      (e.g. 'tomárosla', 'tomaros', 'tomárosos').
+      #TODO create a separate function for these cases?
+    - if such special cases are detected, adds the correspondin
+      enclitics to the enclitics list.
+    - checks whether the enclitics joined together are equal to
+      the original word ('tela', 'oslo'). 
+      #TODO move this step to get_last()
+    - if so, 'transfers' the first enclitics to the base_word,
+      so that only one enclitic remains on the list
+    - for all other cases gets the base_word (i.e. the word
+      without the enclitics) by substracting the enclitics
+      from the original word.
+    - if the first enclitic on the list is 'nos' or 'se'
+      the add_letter() method is called
+    6. add_letter()
+      - checks whether the base_word ends in 'mo'
+        (e.g. 'vámonos' or 'dámosela')
+      - if it does, appends an 's' to the base_word.
+    - the del_accent() function is called:
+    7. del_accent()
+      - checks for special stress cases like 'estate'.
+      - if such a case is detected, marks the 'estate' form
+        as correctly stressed and return 'está' as a base_word.
+      - check for special cases like 'tomaos'
+      - if such a case is detecte, marks the 'tomaos'
+        form as correctly stressed.
+      - for all the other cases calls last_two()
+      8. last_two()
+        - returns the last two syllables of the base_word
+      - 
+
+
+4. Orden de las secuencias de clíticos. Un mismo verbo puede llevar dos y hasta tres pronombres clíticos, que se anteponen o posponen al verbo siempre en bloque, no pudiendo anteponerse unos y posponerse otros. El orden no es libre y se somete, básicamente, a la regla que establece que los pronombres de segunda persona preceden a los de primera y estos a los de tercera, salvo a la forma se, que precede a todas las demás (se + 2.ª pers. + 1.ª pers. + 3.ª pers.): «Ay, Dios, que te me lo llevaste cuando más falta me hacía» (Ayerra Lucha [Esp. 1984]); «Cualquiera se te la llevará delante de las narices» (Aub Calle [Esp. 1961]); no son correctas, por tanto, secuencias como me se o te se, propias del habla popular: «No me se haga el pendejo, Balbicito, no me cojudee» (Bayly Días [Perú 1996]).
+
+1. El primer enclítico siempre es un 'se', 'me', 'te', 'nos' o 'os'.
+
+2. Si el modo no es infinitivo o gerundio, la persona y el número del pronombre tienen que corresponder a los de la forma verbal.
+
+3. El primer enclítico siempre es reflexivo (???)
+
+4. El segundo enclítico puede ser cualquiera menos 'la', 'lo', 'las' o 'los', aunque en la vida real casi siempre es un 'me' o un 'te' (????)
+
+5. El segundo enclítico no puede ser de la misma persona que el primero.
+
+6. El segundo enclítico siempre es un dativo ético (o no???)
+
+5.El tercer enclítico puede ser un 'la', 'lo', 'las', 'los' o un 'le', 'les' ('hágansemele') (???)
+
+6. El tercer enclítico es objeto directo (u objeto indirecto si es 'le', 'les')
+
+
+
+
+
+
+#Si el primer y único enclítico es 'se', solo puede ser reflexivo
+#Si el primer y único enclítico es la, lo, las, los, le, les solo puede ser personal
+
+#Si el penúltimo enclítico es 'se'
+  #Si le siguen la, lo, las, los, 'se' puede ser reflexivo o personal
+  #Si le siguen le o les solo puede ser reflexivo (y si es personal es un leísmo)
+  #Si le siguen me, te, nos, os solo puede ser reflexivo (y en muchos casos tampoco puede ser reflexivo, pero cómo lo detectamos???)
+  
+#Si el penúltimo enclítico es le, les solo puede ser personal
+
+#Si el primer y único o el penúltimo enclítico es me, te, nos, os:
+  #Si es un infintivo o un gerundio puede ser tanto reflexivo como personal
+  #Si es un imperativo:
+    #Si el verbo y el enclítico son de la misma persona y del mismo número ('tómate') es reflexivo
+    #Si es de la segunda persona singular y va con 'os', en realidad es plural y es reflexivo (tomaos)
+    #En todos los demás casos solo puede ser personal (dánoslo, diganme etc.)
+
+
+
+
+
+#si la palabra tiene más de dos sílabas y tiene uno o más enclíticos
+  #si es un infinitio o la 2da persona Pl. del imperativo (comedme):
+    #si solo tiene un enclítico:
+      #ninguna de las sílabas lleva tilde. E.g. comerme
+    #si tiene dos o más enclíticos:
+      #la tilde la lleva la última sílaba de la palabra (sin los enclíticos). E.g. comérmelo 
+
+  #para todas las demás formas:
+    # la tilde está en la penúltima sílaba de la palabra (sin los enclíticos). E.g. pregúntaselo, tómala.
+
+
+Preguntas:
+combination.py:
+  1. Dict for validity messages?
+  2.   # por qué no funciona:
+  # Matrix = [['A' for encl in ENCLITICS] for encl in ENCLITICS]
