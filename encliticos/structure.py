@@ -64,15 +64,16 @@ class Structure:
   def __init__(self, is_regular, lemas, enclitics):
     self.lemas = lemas
     self.enclitics = enclitics
+    self.is_regular = is_regular
     self.valid = False
 
     self.infinitives, self.pers, self.num = self.get_forms()
     self.reflexive = self.is_reflexive()
-    self.is_regular = is_regular
 
     self.combination = None
     if len(enclitics) >= 2:     
       self.combination = Combination(enclitics)
+    self.message = self.build_message()
 
   def get_forms(self):
     iig_infinitives = [] #infinitives for inf, imp and ger forms
@@ -147,7 +148,7 @@ class Structure:
     #return (can it be reflexive, is it always reflexive)
     return (False, False)
 
-  def print_message(self):
+  def build_message(self):
     length = len(self.enclitics)
     message = u'\tTienes un verbo que puede ser uno de los siguientes: {}.\n'
     if length >= 1:
@@ -174,7 +175,6 @@ class Structure:
     if self.reflexive == (True, False):
       elms[0] += u'. También puede ser un pronombre reflexivo'
     
-    print(message.format(', '
-      .join(self.infinitives), *elms))
+    return message.format(', '.join(self.infinitives), *elms)
 
 

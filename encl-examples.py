@@ -19,7 +19,7 @@ if __name__ == '__main__':
       for num, structure in enumerate(word.structures):       
         if len(word.structures) > 1:        
           print(u'Opción {}.'.format(num+1))
-        structure.print_message()
+        print(structure.message)
 
   get_word_info(u'acércamelos')
   get_word_info(u'acentuamelose')

@@ -142,7 +142,7 @@ class WordTests(unittest.TestCase):
         Word(value)
 
     with self.assertRaises(ValueError):
-      Word(u'las').analyze_word()  
+      Word(u'las').analyze_word()
 
   def test_syls_number(self):
     self.assertEqual(len(self.los.syllables), 1)

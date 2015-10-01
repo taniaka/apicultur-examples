@@ -209,9 +209,21 @@
   #para todas las demás formas:
     # la tilde está en la penúltima sílaba de la palabra (sin los enclíticos). E.g. pregúntaselo, tómala.
 
+0. name for is_regular? for add_to_base function
+a. messages.
+b. error types.
+c. name for reflexive verbs.
+d. OI vs. dativo
 
-Preguntas:
+
 combination.py:
   1. Dict for validity messages?
   2.   # por qué no funciona:
   # Matrix = [['A' for encl in ENCLITICS] for encl in ENCLITICS]
+
+word.py
+1. all dicts in class? if used in 1 funcion?
+2. uppercase?
+
+import?
+call analyze_word()
