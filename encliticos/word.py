@@ -28,15 +28,15 @@ class Word:
     },
     u'nos': {
       'length': 2,
-      'last_letters': [u'a', u'e', u'í', u'i'],
-      'add_letter': u'd',
-      'bad_end': u'd',
+      'last_letters': [u'mo'],
+      'add_letter': u's',
+      'bad_end': u'mos',
     },
     u'se': {
       'length': 2,
-      'last_letters': [u'a', u'e', u'í', u'i'],
-      'add_letter': u'd',
-      'bad_end': u'd'
+      'last_letters': [u'mo'],
+      'add_letter': u's',
+      'bad_end': u'mos'
     }
   }
 
@@ -96,10 +96,19 @@ class Word:
   def add_to_base(self, base_word, encls):
     #gets the correct verbal form of vámonos, démosela, tomaos:
     # 'vámos', 'démos', 'tomad'
-    #TODO reorganize dict?
-    encl = encls[0]
-    encl_dict = self.EXTRA_LETTERS[encl]
     is_regular = True
+
+    #TODO improve try/except
+    try:
+      encl = encls[0]
+    except IndexError:
+      return is_regular, base_word
+
+    try:
+      encl_dict = self.EXTRA_LETTERS[encl]
+    except KeyError:
+      return is_regular, base_word
+             
     bad_end = encl_dict['bad_end']
     bad_ending = bad_end + ''.join(encls)
     ending_pos  = self.word.rfind(bad_ending)
