@@ -50,22 +50,7 @@ class Combination:
     'X':  u'\n\tCombinación inválida de dos terceras personas. ',
     'T':  u'\n\tEstá combinación no es válida. '
           u'Mensaje explicando cómo combinar 3 enclíticos. '
-
   }
-
-
-  # VALID_MESSAGE = [ u"\n\tAquí tendremos un mensaje explicando "\
-  #                   u"por qué esta combinación es válida y cómo "\
-  #                   u"hay que combinar dos enclíticos.",
-  #                   u"\n\tMensaje explicando por qué esta combinación "\
-  #                   u"es correcta y cómo combinar 3 enclíticos"
-  # ]                  
-
-  # INVALID_MESSAGE =[u"\n\tSin embargo, esta combinación no es válida.\n\t",
-  #                   u"\n\tEsta combinación no es válida. "\
-  #                   u"\n\tMensaje sobre cómo combinar 3 enclíticos.\n\t"
-  # ]                  
-                        
 
   def __init__(self, combination):    
     self.combination = combination

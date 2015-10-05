@@ -74,7 +74,6 @@ if __name__ == '__main__':
   get_word_info(u'mala')
   get_word_info(u'verde')
 
-
   print(u'\nEscribe tu palabra aquí.'
         u'Si no quieres seguir, escribe QUIT.')
 

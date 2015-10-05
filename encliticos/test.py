@@ -10,6 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.par
 from encliticos.word import Word
 from encliticos.structure import Structure
 from encliticos.combination import Combination
+from encliticos.form import Form, VerbalForm, PersonalPronominalForm
 
 
 class CombinationTests(unittest.TestCase):
@@ -39,59 +40,50 @@ class StructureTests(unittest.TestCase):
   def setUp(self):
     self.preguntaselo = Structure(
       True,
-      [{
-          "lema": "preguntar",
-          "categoria": "VMIP3S0"
-        },
-        {
+      VerbalForm({
           "lema": "preguntar",
           "categoria": "VMM02S0"
-        }
-      ],
+        }),
       ['se', 'lo']
     )
     self.damosnos = Structure(
       False,
-      [{
+      VerbalForm({
         "lema": "dar",
         "categoria": "VMIP1P0"
-        }
-      ],
+        }),
       ['nos']
     )
     self.tomandote = Structure(
       True,
-      [{
+      VerbalForm({
       "lema": "tomar",
       "categoria": "VMG0000"
-        }
-      ],
+        }),
       ['te']
     )
     self.pido = Structure(
       True,
-      [{
+      VerbalForm({
       "lema": "pedir",
       "categoria": "VMIP1S0"
-      }],
+      }),
       []
     )
     self.tomarsemelos = Structure(
       True,
-      [{
+      VerbalForm({
       "lema": "tomar",
       "categoria": "VMN0000"
-        }
-      ],
+        }),
       ['se', 'me', 'los']
     )
     self.tomarselosme = Structure(
       True,
-      [{
+      VerbalForm({
       "lema": "tomar",
       "categoria": "VMN0000"
-        }
-      ],
+        }),
       ['se', 'los', 'me']
     )
 
@@ -118,22 +110,10 @@ class WordTests(unittest.TestCase):
   """
 
   def setUp(self):
-    self.los = Word(u'los')
     self.comer = Word(u'comer')
-    self.dimelo = Word(u'dímelo')
-    self.dimelo_wrong = Word(u'dimelo')
-    self.tomaroslo = Word(u'tomároslo')
-    self.tomaroslo_wrong = Word(u'tómaroslo')
-    self.acentuamelo_wrong = Word(u'acentuamelo')
-    self.darlole = Word(u'darlole')
+    self.acentuamelo = Word(u'acentuamelo')
     self.renidos = Word(u'reñidos')
-    self.comeos = Word(u'comeos')
-    self.vamonos = Word(u'vámonos')
-    self.vamosnos = Word(u'vámosnos')
     self.demosela = Word(u'démosela')
-    self.tomarosmela = Word(u'tomárosmela')
-    self.tomarososla = Word(u'tomárososla')
-
 
   def test_bad_value(self):
     bad_values = [u'dime12', u'dime lo', u'']
@@ -145,32 +125,52 @@ class WordTests(unittest.TestCase):
       Word(u'las').analyze_word()
 
   def test_syls_number(self):
-    self.assertEqual(len(self.los.syllables), 1)
-    self.assertEqual(len(self.tomaroslo.syllables), 4)
+    self.assertEqual(len(Word(u'los').syllables), 1)
+    self.assertEqual(len(Word(u'tomároslo').syllables), 4)
 
   def test_modify_ros_dos(self):
-    self.assertEqual(self.tomaroslo.syllables[-2], u'os')
-    self.assertEqual(self.renidos.syllables[-1], u'os')
-    self.assertEqual(self.tomarosmela.syllables, 
+    self.assertEqual(Word(u'tomároslo').syllables[-2], u'os')
+    self.assertEqual(Word(u'reñidos').syllables[-1], u'os')
+    self.assertEqual(Word(u'tomárosmela').syllables, 
                     [u'to',u'már', u'os', u'me', u'la'])
-    self.assertEqual(self.tomarososla.syllables, 
+    self.assertEqual(Word(u'tomárososla').syllables, 
                     [u'to', u'már', u'os', u'os', u'la'])
 
   def test_get_enclitics(self):
-    self.assertEqual(self.demosela.get_enclitics(),
-                        (u'démo', [u'se', u'la']))
-    self.assertEqual(self.renidos.get_enclitics(),
-                    (u'reñid', [u'os']))
-    self.assertEqual(self.acentuamelo_wrong.get_enclitics(),
-                        (u'acentua', [u'me', u'lo']))
-    self.assertEqual(self.comer.get_enclitics(),
-                        (u'comer', []))
+    self.demosela.get_enclitics()
+    self.comer.get_enclitics()
+    self.renidos.get_enclitics()
+    self.acentuamelo.get_enclitics()
+
+    self.assertEqual(self.demosela.current_base,u'démo')
+    self.assertEqual(self.renidos.current_enclitics, [u'os'])
+    self.assertEqual(self.acentuamelo.current_base,u'acentua')
+    self.assertEqual(self.comer.current_enclitics, [])
 
   def test_irregular(self):
     pass
     # self.assertFalse(self.vamosnos.structures[0].is_regular)
 
+class TestForm(unittest.TestCase):
+  def setUp(self):
+    self.tomo = VerbalForm({
+      "lema": "tomar",
+      "categoria": "VMIP1S0"
+    })
+    self.los = PersonalPronominalForm({
+      "lema": "los",
+      "categoria": "PP3MPA00"
+    })
 
+  def test_bad_form(self):
+    with self.assertRaises(ValueError):
+      VerbalForm({"lema": "bolígrafo","categoria": "NCMS000"})
+    with self.assertRaises(ValueError):
+      PersonalPronominalForm({"lema": "cuyo","categoria": "PR0MS000"})
+
+  def test_good_form(self):
+    self.assertEqual(self.tomo.person, '1')
+    self.assertEqual(self.los.number, 'P')
 
 class TestConnection(unittest.TestCase):
   """

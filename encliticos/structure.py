@@ -10,6 +10,8 @@ except ImportError:
     sys.exit(1)
 
 from .combination import Combination
+from .form import PersonalPronominalForm
+
 
 class Structure:
 
@@ -30,7 +32,7 @@ class Structure:
   }
 
   VERB_MESSAGES = {
-    'valid' : {  
+    'valid': {  
       True : u'\t\tTu forma verbal es un infinitivo, imperativo '
              u'o gerundio, por lo tanto se puede usar con enclíticos.\n',
       False: u'\t\tSin embargo, te advertimos que los enclíticos '
@@ -39,9 +41,9 @@ class Structure:
              u'en Asturias, los pronombres pueden posponer al indicativo, condicional '
              u'y subjuntivo, pero en el castellano estándar está en desuso.\n'
     },
-    'regular' : {
-      True : u'',
-      False: u'\t Sin embargo...(explicar por qué vamosnos o demossela '
+    'extra_letter': {
+      False : u'',
+      True: u'\t Sin embargo...(explicar por qué vamosnos o demossela '
              u'o tomados son incorrectos).\n'
     }
   }
@@ -58,102 +60,80 @@ class Structure:
                   u'\t\tEl primero es un {}: {}.\n'\
                   u'\t\tEl segundo es un {}: {}.\n'
                   u'\t\tEl tercero es un {}: {}.'
-
   ]
 
-  def __init__(self, is_regular, lemas, enclitics):
-    self.lemas = lemas
+  def __init__(self, extra_letter, form, enclitics):
+    self.form = form
     self.enclitics = enclitics
-    self.is_regular = is_regular
-    self.valid = False
+    self.extra_letter = extra_letter
+    self.valid = self.form.mode in ['M', 'N', 'G']
 
-    self.infinitives, self.pers, self.num = self.get_forms()
     self.reflexive = self.is_reflexive()
 
+    #TODO: Create combination with none error and message
     self.combination = None
     if len(enclitics) >= 2:     
       self.combination = Combination(enclitics)
     self.message = self.build_message()
 
-  def get_forms(self):
-    iig_infinitives = [] #infinitives for inf, imp and ger forms
-    infinitives = []
-    iig_pers, iig_num = [], []
-    pers, num = [], []
-
-    for lema in self.lemas:
-      category = lema['categoria']
-
-      if category[2] in ['M', 'G', 'N']:
-        self.valid = True
-      if not self.valid:
-        infinitives.append(lema['lema'])
-        #TODO remove repetition
-        if self.enclitics:
-          if category[2] != 'P':
-            pers.append(category[4])
-            num.append(category[5])
-      else:    
-        iig_infinitives.append(lema['lema'])
-        if self.enclitics:
-          if category[2] == 'M':
-            iig_pers.append(category[4])
-            iig_num.append(category[5])
-    if iig_infinitives:
-      infinitives = iig_infinitives
-      pers, num = iig_pers, iig_num
-
-    infinitives = list(set(infinitives))
-    return infinitives, pers, num   
-
   def is_reflexive(self):
-    if not self.enclitics:
-      return (False, False)
+    can_be_reflexive = False
+    always_reflexive = False
 
-    first = self.enclitics[0]
-    length = len(self.enclitics)
-    pr_pers, pr_num = None, None
+    try:
+      first = self.enclitics[0]
+    except IndexError:
+      None
+    else:
+      length = len(self.enclitics)
 
-    if first == 'se':
-      if length == 1:
-        return (True, True)
-      elif length >= 2:
-        second = self.enclitics[1]
-        if length == 2:
-          if not self.pers:
-            if second in ['la', 'lo', 'las', 'los']:
-              return (True, False)
-            else:
-              return (True, True)
-          else:
-            if '3' in self.pers:
-              return (True, False)
+      if first == 'se':
+        try:
+          second = self.enclitics[1]
+        except IndexError:
+          can_be_reflexive, always_reflexive = True, True
         else:
-          return (True, True)
-              
-        #TODO mark acerquémosele as invalid combination.
+          if length == 2:
+            if self.form.mode in ['N', 'G', 'P']:
+              can_be_reflexive = True
+              if second not in ['la', 'lo', 'las', 'los']:
+                always_reflexive = True
+            else:
+              if self.form.person == '3':
+                can_be_reflexive = True
+          else:
+            can_be_reflexive, always_reflexive = True, True
+                
+      elif first in ['me', 'te', 'nos', 'os'] and length < 3:
+        if self.form.mode in ['N', 'G', 'P']:
+          can_be_reflexive = True
+        else:
+          pron_lemmas = self.APICULTUR.lematiza2(word=first)['lemas']
+          for pron_lemma in pron_lemmas:
+            try:
+              pron_form = PersonalPronominalForm(pron_lemma)
+            except ValueError:
+              continue
+            else:
+              if (pron_form.person == self.form.person 
+              and pron_form.number == self.form.number):
+                can_be_reflexive, always_reflexive = True, True
 
-    elif first in ['me', 'te', 'nos', 'os'] and length != 3:
-      if not self.pers:
-        return (True, False)
-      else:
-        pr_lemas = self.APICULTUR.lematiza2(word=first)['lemas']
-        for pr_lema in pr_lemas:
-          pr_cat = pr_lema['categoria']
-          if pr_cat[:2] == 'PP':
-            pr_pers, pr_num = pr_cat[2], pr_cat[4]
-            break
-        if pr_pers in self.pers and pr_num in self.num:
-          return (True, True) 
-    #return (can it be reflexive, is it always reflexive)
-    return (False, False)
+    return (can_be_reflexive, always_reflexive)
+
+  #TODO: check if correct
+  def __hash__(self):
+    return 1
+
+  def __eq__(self, other): 
+    return self.__dict__ == other.__dict__
 
   def build_message(self):
     length = len(self.enclitics)
-    message = u'\tTienes un verbo que puede ser uno de los siguientes: {}.\n'
+    message = u'\tTienes un verbo: {}.\n'
     if length >= 1:
       message += (self.VERB_MESSAGES['valid'][self.valid]
-              + self.VERB_MESSAGES['regular'][self.is_regular])
+              + self.VERB_MESSAGES['extra_letter'][self.extra_letter])
  
     message += self.ENC_MESSAGES[length]
     elms = [(self.PRONOUNS[encl], encl) for encl in self.enclitics]
@@ -167,7 +147,6 @@ class Structure:
       if length == 3 and self.enclitics[0] == 'se':
         elms[0] = 'pronombre reflexivo '  
 
-
       message += self.combination.message
 
     if self.reflexive == (True, True):
@@ -175,6 +154,6 @@ class Structure:
     if self.reflexive == (True, False):
       elms[0] += u'. También puede ser un pronombre reflexivo'
     
-    return message.format(', '.join(self.infinitives), *elms)
+    return message.format(self.form.lemma, *elms)
 
 

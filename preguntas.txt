@@ -197,8 +197,6 @@
 
 
 
-
-
 #si la palabra tiene más de dos sílabas y tiene uno o más enclíticos
   #si es un infinitio o la 2da persona Pl. del imperativo (comedme):
     #si solo tiene un enclítico:
@@ -209,11 +207,22 @@
   #para todas las demás formas:
     # la tilde está en la penúltima sílaba de la palabra (sin los enclíticos). E.g. pregúntaselo, tómala.
 
-0. name for is_regular? for add_to_base function
 a. messages.
 b. error types.
 c. name for reflexive verbs.
 d. OI vs. dativo
+
+form.py:
+1. self.category vs category inheritance
+
+structure.py
+1. try-except-else? else?
+2.  if structure.combination and structure.combination.error
+3.   def __hash__(self):
+    return 1
+
+  def __eq__(self, other): 
+    return self.__dict__ == other.__dict__
 
 
 combination.py:

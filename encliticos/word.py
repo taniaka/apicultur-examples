@@ -9,7 +9,9 @@ except ImportError:
     print(u"No encuentro el archivo 'secret.py' en este directorio con su ACCESS_TOKEN...")
     sys.exit(1)
 
+from .form import VerbalForm
 from .structure import Structure
+
 
 class Word:
 
@@ -51,8 +53,8 @@ class Word:
     self.word = word
     self.syllables = self.syllabicate()
     self.structures = []
-    # self.analyze_word()
-
+    self.current_base = None
+    self.current_enclitics = None
 
   def syllabicate(self):
     syllabicated = self.APICULTUR.silabeame(word=self.word)
@@ -81,71 +83,101 @@ class Word:
         if (1-i) < len(syls) and syls[i-1] in ['do', 'ro']:
           syls[i-2] += syls[i-1][0]
           syls[i-1], syls[i] = 'os', 'os'
-
     return syls
-
 
   def swap_stress(self, word, keys, values):
     stresses = dict(zip(keys, values))
-    new_word = word  
+    new_word = word
     for key, value in stresses.items():
       if key in word:
         new_word = word.replace(key, value)
-    return new_word      
+    return new_word   
 
-  def add_to_base(self, base_word, encls):
+  def check_extra_letter(self):
     #gets the correct verbal form of vámonos, démosela, tomaos:
     # 'vámos', 'démos', 'tomad'
-    is_regular = True
-
+    has_extra_letter = False
     #TODO improve try/except
     try:
-      encl = encls[0]
+      encl = self.current_enclitics[0]
     except IndexError:
-      return is_regular, base_word
+      return has_extra_letter
 
     try:
       encl_dict = self.EXTRA_LETTERS[encl]
     except KeyError:
-      return is_regular, base_word
+      return has_extra_letter
              
     bad_end = encl_dict['bad_end']
-    bad_ending = bad_end + ''.join(encls)
+    bad_ending = bad_end + ''.join(self.current_enclitics)
     ending_pos  = self.word.rfind(bad_ending)
 
     if ending_pos != -1:
       if (len(self.word) - ending_pos) == len(bad_ending):
         if self.word != 'idos':
-          is_regular = False
+          has_extra_letter = True
     else:
       pos = encl_dict['length']
-      if len(base_word) > pos:
-        if base_word[-pos:] in encl_dict['last_letters']:
-          base_word += encl_dict['add_letter']
-    return is_regular, base_word
+      if len(self.current_base) > pos:
+        if self.current_base[-pos:] in encl_dict['last_letters']:
+          self.current_base += encl_dict['add_letter']
+    return has_extra_letter
+        
+  def encl_to_base(self):
+    self.current_base = self.current_base + self.current_enclitics[0]     
+    self.current_enclitics = self.current_enclitics[1:]
 
-  def verbs_in_lemas(self, lemmas):
-    if lemmas:
-      lemas = []
-      for lemma in lemmas:
-        category = lemma['categoria']
-        if category[0] == 'V':
-          lemas.append(lemma)
-    return lemas
+  def get_structures(self):
+    has_extra_letter, lemmas = self.detect_verbs()
+    encls = self.current_enclitics
+    structures = []
+    #iig = infinitivo, gerundio, imperativo
+    iig_structures = []
+    for lemma in lemmas:
+      try:
+        new_form = VerbalForm(lemma)
+      except ValueError:
+        None
+      else:
+        new_structure = Structure(has_extra_letter, new_form, encls)
+        structures.append(new_structure)
+        if new_structure.valid:
+          iig_structures.append(new_structure)
 
-  def detect_verbs(self, base_word, enclitics):
-    is_regular = True
-    if enclitics:
+    want_more_structures = False
+
+    if structures:
+      if iig_structures:
+        structures = iig_structures
+      for structure in structures:
+        self.structures.append(structure)
+        if self.current_enclitics:
+          #TODO: modify combination None, change order
+          if not structure.valid or structure.extra_letter or (
+          structure.combination and structure.combination.error):
+              want_more_structures = True
+    else:
+      if self.current_enclitics:
+        want_more_structures = True
+            
+    if want_more_structures:
+      self.encl_to_base()
+      self.get_structures()
+
+
+  def detect_verbs(self):
+    has_extra_letter = False
+    if self.current_enclitics:
       #BASE_WORD STEP 2 (get base with correct verbal form)
-      if enclitics[0] in ['nos', 'se', 'os']:
-        is_regular, base_word = self.add_to_base(base_word, enclitics)
-
+      if self.current_enclitics[0] in ['nos', 'se', 'os']:
+        has_extra_letter = self.check_extra_letter()
     #BASE_WORD STEP 3 (get base with correct stress)
-    stressless = self.swap_stress(base_word, self.TILDED, self.TILDLESS) 
+    current_base = self.current_base
+    stressless = self.swap_stress(current_base, self.TILDED, self.TILDLESS) 
     lemmas = self.APICULTUR.lematiza2(word=stressless)['lemas']
-    lemas = self.verbs_in_lemas(lemmas)
-    if not lemas:
-      #can't use the syllabicated word because of the diphtongs
+
+    if len(lemmas) == 1 and lemmas[0]['categoria'] == '0':
+     #can't use the syllabicated word because of the diphtongs
       letters = list(stressless)
       start = 0
       for index, letter in enumerate(letters):
@@ -155,35 +187,10 @@ class Word:
           #TODO avoid replacing twice
           restressed = stressless.replace(syl, stressed_syl)
           lemmas = self.APICULTUR.lematiza2(word=restressed)['lemas']
-          lemas = self.verbs_in_lemas(lemmas)
           start = index + 1
-          if lemas:
+          if lemmas[0]['categoria'] != '0':
             break  
-    return is_regular, lemas
-
-  def modify_structure(self, base_word, enclitics):
-    new_base_word = base_word + enclitics[0]     
-    new_enclitics = enclitics[1:]
-    return new_base_word, new_enclitics 
-
-  def get_structure(self, base_word, enclitics):
-    is_regular, lemas = self.detect_verbs(base_word, enclitics)
-    if not lemas:
-      if not enclitics:
-        return
-      else:
-        new_base_word, new_enclitics = self.modify_structure(base_word, enclitics)
-        self.get_structure(new_base_word, new_enclitics)          
-    #TODO get the original base_word
-    else:
-      structure = Structure(is_regular, lemas, enclitics)
-      #TODO si la nueva estructura es correcta, eliminar la anterior
-      self.structures.append(structure)
-      if enclitics:
-       if not structure.valid or (len(enclitics) >= 2 and
-        structure.combination.error):
-          new_base_word, new_enclitics = self.modify_structure(base_word, enclitics)
-          self.get_structure(new_base_word, new_enclitics)                
+    return has_extra_letter, lemmas
 
   def get_enclitics(self):
     base_word = self.word
@@ -205,16 +212,20 @@ class Word:
       base_syls = self.syllables[:-len(enclitics)]
       #BASE_WORD STEP 1 (original base)
       base_word = ''.join(base_syls)
-    return base_word, enclitics
-
+    
+    self.current_base = base_word
+    self.current_enclitics = enclitics
 
   def analyze_word(self):
     try:
-      base_word, enclitics = self.get_enclitics()
+      self.get_enclitics()
     except IndexError:
       raise ValueError(u'\tTu palabra solo tiene una sílaba y no puede'
                        u'tener enclíticos, intenta con otra palabra.')
-    self.get_structure(base_word, enclitics)
+    self.get_structures()
+    new_structures = list(set(self.structures))
+    self.structures = new_structures
+    # print(self.structures[0] == self.structures[1])
 
 
         # if self.word != self.accentuated:
