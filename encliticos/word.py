@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import re
+
 from apicultur.utils import ApiculturRateLimitSafe
 try:
     from secret import ACCESS_TOKEN 
@@ -15,8 +17,9 @@ from .structure import Structure
 
 class Word:
 
-  PRONOUNS =  ['la', 'las', 'le', 'les', 'lo','los',
-               'nos', 'me', 'os', 'te', 'se']
+  PRONOUNS =  'me|te|lo|la|los|las|se|le|les|nos|os'
+
+  PATTERN =  re.compile(r'(^\w+?)(?:(m{}))?(?:({}))?(?:({}))?$'.format(PRONOUNS, PRONOUNS, PRONOUNS))
 
   TILDED = [u'á', u'ú', u'í', u'é', u'ó']
   TILDLESS = [u'a', u'u', u'i', u'e', u'o']
@@ -51,39 +54,9 @@ class Word:
     except AssertionError:
       raise ValueError(u'Parece que no es una palabra. Vuelve a intentar.\n')
     self.word = word
-    self.syllables = self.syllabicate()
     self.structures = []
     self.current_base = None
     self.current_enclitics = None
-
-  def syllabicate(self):
-    syllabicated = self.APICULTUR.silabeame(word=self.word)
-    syls = syllabicated['palabraSilabeada'].split('=')
-    length = len(syls)
-    if length > 1:  
-      syls = self.modify_syllables(syls)
-    return syls
-
-  def modify_syllables(self, syls):
-    num = 3
-    if len(syls) == 2:
-      num = 2
-    for n in range(num):
-      i = -(n+1)
-      #casos 'tomaros','tomárosla','tomárosmela'
-      if syls[i] in ['dos', 'ros']:
-        try:
-          syls[i-1] += syls[i][0]
-        except IndexError:
-          pass
-        else:  
-          syls[i] = 'os'
-      #casos'tomárosos', 'tomárososla'
-      elif syls[i] == 'sos':
-        if (1-i) < len(syls) and syls[i-1] in ['do', 'ro']:
-          syls[i-2] += syls[i-1][0]
-          syls[i-1], syls[i] = 'os', 'os'
-    return syls
 
   def swap_stress(self, word, keys, values):
     stresses = dict(zip(keys, values))
@@ -173,7 +146,7 @@ class Word:
         has_extra_letter = self.check_extra_letter()
     #BASE_WORD STEP 3 (get base with correct stress)
     current_base = self.current_base
-    stressless = self.swap_stress(current_base, self.TILDED, self.TILDLESS) 
+    stressless = self.swap_stress(current_base, self.TILDED, self.TILDLESS)
     lemmas = self.APICULTUR.lematiza2(word=stressless)['lemas']
 
     if len(lemmas) == 1 and lemmas[0]['categoria'] == '0':
@@ -193,39 +166,18 @@ class Word:
     return has_extra_letter, lemmas
 
   def get_enclitics(self):
-    base_word = self.word
-    enclitics = []
-    prelast, last = self.syllables[-2], self.syllables[-1]
-    length = len(self.syllables)
-    #TODO shorten?
-    if last in self.PRONOUNS:
-      enclitics.append(last)
-      if length > 2:
-        if prelast in self.PRONOUNS:
-          enclitics.insert(0, prelast)
-          if length > 3:
-            preprelast = self.syllables[-3]
-            if preprelast in self.PRONOUNS:
-              enclitics.insert(0, preprelast)
-
-    if enclitics:
-      base_syls = self.syllables[:-len(enclitics)]
-      #BASE_WORD STEP 1 (original base)
-      base_word = ''.join(base_syls)
-    
-    self.current_base = base_word
-    self.current_enclitics = enclitics
+    stressless = self.word
+    stressless = self.swap_stress(stressless, self.TILDED, self.TILDLESS)
+    base_encl = self.PATTERN.search(self.word).groups()
+    self.current_base = base_encl[0]
+    self.current_enclitics = base_encl[1:]
+    self.current_enclitics = [value for value in self.current_enclitics if value != None]
 
   def analyze_word(self):
-    try:
-      self.get_enclitics()
-    except IndexError:
-      raise ValueError(u'\tTu palabra solo tiene una sílaba y no puede'
-                       u'tener enclíticos, intenta con otra palabra.')
+    self.get_enclitics()
     self.get_structures()
     new_structures = list(set(self.structures))
     self.structures = new_structures
-    # print(self.structures[0] == self.structures[1])
 
 
         # if self.word != self.accentuated:
