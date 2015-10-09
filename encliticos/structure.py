@@ -62,10 +62,17 @@ class Structure:
                   u'\t\tEl tercero es un {}: {}.'
   ]
 
-  def __init__(self, extra_letter, form, enclitics):
+  EXTRA_LETTER = {
+    u'os': u'd',
+    u'nos': u'mos',
+    u'se': u'mos'
+  }
+
+  def __init__(self, word, form, enclitics):
+    self.word = word
     self.form = form
     self.enclitics = enclitics
-    self.extra_letter = extra_letter
+    self.has_extra_letter = self.has_extra_letter()
     self.valid = self.form.mode in ['M', 'N', 'G']
 
     self.reflexive = self.is_reflexive()
@@ -76,10 +83,36 @@ class Structure:
       self.combination = Combination(enclitics)
     self.message = self.build_message()
 
+  #TODO: check if correct
+  def __hash__(self):
+    return 1
+
+  def __eq__(self, other): 
+    return self.__dict__ == other.__dict__
+
+  def has_extra_letter(self):
+    #checks if the verb is of vámosnos, démossela, tomados type:
+    has_extra_letter = False
+    try:
+      encl = self.enclitics[0]
+    except IndexError:
+      return has_extra_letter
+
+    try:
+      bad_end = self.EXTRA_LETTER[encl]
+    except KeyError:
+      return has_extra_letter
+    bad_ending = bad_end + ''.join(self.enclitics)
+    ending_pos  = self.word.rfind(bad_ending)
+
+    if (len(self.word) - ending_pos) == len(bad_ending):
+      if self.word != 'idos':
+        has_extra_letter = True
+    return has_extra_letter
+
   def is_reflexive(self):
     can_be_reflexive = False
     always_reflexive = False
-
     try:
       first = self.enclitics[0]
     except IndexError:
@@ -121,19 +154,13 @@ class Structure:
 
     return (can_be_reflexive, always_reflexive)
 
-  #TODO: check if correct
-  def __hash__(self):
-    return 1
-
-  def __eq__(self, other): 
-    return self.__dict__ == other.__dict__
 
   def build_message(self):
     length = len(self.enclitics)
     message = u'\tTienes un verbo: {}.\n'
     if length >= 1:
       message += (self.VERB_MESSAGES['valid'][self.valid]
-              + self.VERB_MESSAGES['extra_letter'][self.extra_letter])
+              + self.VERB_MESSAGES['extra_letter'][self.has_extra_letter])
  
     message += self.ENC_MESSAGES[length]
     elms = [(self.PRONOUNS[encl], encl) for encl in self.enclitics]

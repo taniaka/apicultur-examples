@@ -217,6 +217,7 @@ form.py:
 
 structure.py
 1. try-except-else? else?
+1. attribute for extra letter
 2.  if structure.combination and structure.combination.error
 3.   def __hash__(self):
     return 1

@@ -18,6 +18,7 @@ class Form():
   def __eq__(self, other): 
     return self.__dict__ == other.__dict__    
 
+
 class VerbalForm(Form):
   def __init__(self, form):
     Form.__init__(self, form, 'V')
@@ -26,6 +27,7 @@ class VerbalForm(Form):
     self.mode = category[2]
     self.person = category[4]
     self.number = category[5]
+
 
 class PronominalForm(Form):
   def __init__(self, form, pr_type):
@@ -39,15 +41,11 @@ class PronominalForm(Form):
       self.person = category[2]
       self.number = category[4]
 
+
 class PersonalPronominalForm(PronominalForm):
   def __init__(self, form):
     PronominalForm.__init__(self, form, 'P')
 
-# le = PersonalPronominalForm(   {
-#       "lema": "le",
-#       "categoria": "PP3CSD00"
-#     }
-# )
 
 
 

@@ -17,31 +17,28 @@ from .structure import Structure
 
 class Word:
 
-  PRONOUNS =  'me|te|lo|la|los|las|se|le|les|nos|os'
+  PRONOUNS =  'lo|la|los|las|se|le|les|nos|os|me|te'
 
-  PATTERN =  re.compile(r'(^\w+?)(?:(m{}))?(?:({}))?(?:({}))?$'.format(PRONOUNS, PRONOUNS, PRONOUNS))
+  PATTERN =  re.compile(r'(^\w+?)(?:({}))?(?:({}))?(?:({}))?$'.format(PRONOUNS, PRONOUNS, PRONOUNS))
 
   TILDED = [u'á', u'ú', u'í', u'é', u'ó']
   TILDLESS = [u'a', u'u', u'i', u'e', u'o']
 
-  EXTRA_LETTERS = {
+  LAST_LETTER = {
     u'os': {
       'length': 1,
       'last_letters': [u'a', u'e', u'í', u'i'],
-      'add_letter': u'd',
-      'bad_end': u'd'
+      'add_letter': u'd'
     },
     u'nos': {
       'length': 2,
       'last_letters': [u'mo'],
-      'add_letter': u's',
-      'bad_end': u'mos',
+      'add_letter': u's'
     },
     u'se': {
       'length': 2,
       'last_letters': [u'mo'],
-      'add_letter': u's',
-      'bad_end': u'mos'
+      'add_letter': u's'
     }
   }
 
@@ -54,6 +51,7 @@ class Word:
     except AssertionError:
       raise ValueError(u'Parece que no es una palabra. Vuelve a intentar.\n')
     self.word = word
+    self.stressless = word
     self.structures = []
     self.current_base = None
     self.current_enclitics = None
@@ -64,44 +62,34 @@ class Word:
     for key, value in stresses.items():
       if key in word:
         new_word = word.replace(key, value)
-    return new_word   
+    return new_word
 
-  def check_extra_letter(self):
+  def add_letter(self):
     #gets the correct verbal form of vámonos, démosela, tomaos:
-    # 'vámos', 'démos', 'tomad'
-    has_extra_letter = False
     #TODO improve try/except
+    #TODO do we need these two blocks?
     try:
       encl = self.current_enclitics[0]
     except IndexError:
       return has_extra_letter
-
     try:
-      encl_dict = self.EXTRA_LETTERS[encl]
+      encl_dict = self.LAST_LETTER[encl]
     except KeyError:
       return has_extra_letter
              
-    bad_end = encl_dict['bad_end']
-    bad_ending = bad_end + ''.join(self.current_enclitics)
-    ending_pos  = self.word.rfind(bad_ending)
-
-    if ending_pos != -1:
-      if (len(self.word) - ending_pos) == len(bad_ending):
-        if self.word != 'idos':
-          has_extra_letter = True
-    else:
-      pos = encl_dict['length']
-      if len(self.current_base) > pos:
-        if self.current_base[-pos:] in encl_dict['last_letters']:
-          self.current_base += encl_dict['add_letter']
-    return has_extra_letter
+    pos = encl_dict['length']
+    if len(self.current_base) > pos:
+      if self.current_base[-pos:] in encl_dict['last_letters']:
+        self.current_base += encl_dict['add_letter']
         
   def encl_to_base(self):
     self.current_base = self.current_base + self.current_enclitics[0]     
     self.current_enclitics = self.current_enclitics[1:]
 
   def get_structures(self):
-    has_extra_letter, lemmas = self.detect_verbs()
+    #TODO add lemmatization class
+    lemmas = self.detect_verbs()
+    word = self.stressless
     encls = self.current_enclitics
     structures = []
     #iig = infinitivo, gerundio, imperativo
@@ -112,7 +100,7 @@ class Word:
       except ValueError:
         None
       else:
-        new_structure = Structure(has_extra_letter, new_form, encls)
+        new_structure = Structure(word, new_form, encls)
         structures.append(new_structure)
         if new_structure.valid:
           iig_structures.append(new_structure)
@@ -126,7 +114,7 @@ class Word:
         self.structures.append(structure)
         if self.current_enclitics:
           #TODO: modify combination None, change order
-          if not structure.valid or structure.extra_letter or (
+          if not structure.valid or structure.has_extra_letter or (
           structure.combination and structure.combination.error):
               want_more_structures = True
     else:
@@ -137,38 +125,39 @@ class Word:
       self.encl_to_base()
       self.get_structures()
 
-
   def detect_verbs(self):
     has_extra_letter = False
     if self.current_enclitics:
-      #BASE_WORD STEP 2 (get base with correct verbal form)
       if self.current_enclitics[0] in ['nos', 'se', 'os']:
-        has_extra_letter = self.check_extra_letter()
-    #BASE_WORD STEP 3 (get base with correct stress)
-    current_base = self.current_base
-    stressless = self.swap_stress(current_base, self.TILDED, self.TILDLESS)
-    lemmas = self.APICULTUR.lematiza2(word=stressless)['lemas']
-
-    if len(lemmas) == 1 and lemmas[0]['categoria'] == '0':
-     #can't use the syllabicated word because of the diphtongs
-      letters = list(stressless)
+        self.add_letter()
+    lemmas = self.APICULTUR.lematiza2(word=self.current_base)['lemas']
+    #TODO: remove repetition
+    lematizable = False
+    for lemma in lemmas:
+      if lemma['categoria'][0] == 'V':
+        lematizable = True
+    if not lematizable:
+      letters = list(self.current_base)
       start = 0
       for index, letter in enumerate(letters):
         if letter in self.TILDLESS:
           syl = ''.join(letters[start:index+1])
           stressed_syl = self.swap_stress(syl, self.TILDLESS, self.TILDED)
           #TODO avoid replacing twice
-          restressed = stressless.replace(syl, stressed_syl)
+          restressed = self.current_base.replace(syl, stressed_syl)
           lemmas = self.APICULTUR.lematiza2(word=restressed)['lemas']
           start = index + 1
-          if lemmas[0]['categoria'] != '0':
-            break  
-    return has_extra_letter, lemmas
+          lematizable = False
+          for lemma in lemmas:
+            if lemma['categoria'][0] == 'V':
+              lematizable = True
+          if lematizable:
+            break
+    return lemmas
 
   def get_enclitics(self):
-    stressless = self.word
-    stressless = self.swap_stress(stressless, self.TILDED, self.TILDLESS)
-    base_encl = self.PATTERN.search(self.word).groups()
+    self.stressless = self.swap_stress(self.word, self.TILDED, self.TILDLESS)
+    base_encl = self.PATTERN.search(self.stressless).groups()
     self.current_base = base_encl[0]
     self.current_enclitics = base_encl[1:]
     self.current_enclitics = [value for value in self.current_enclitics if value != None]
@@ -176,6 +165,7 @@ class Word:
   def analyze_word(self):
     self.get_enclitics()
     self.get_structures()
+    #TODO delete repetition for bailamostelo
     new_structures = list(set(self.structures))
     self.structures = new_structures
 

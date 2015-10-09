@@ -39,7 +39,7 @@ class StructureTests(unittest.TestCase):
 
   def setUp(self):
     self.preguntaselo = Structure(
-      True,
+      'pregúntaselo',
       VerbalForm({
           "lema": "preguntar",
           "categoria": "VMM02S0"
@@ -47,7 +47,7 @@ class StructureTests(unittest.TestCase):
       ['se', 'lo']
     )
     self.damosnos = Structure(
-      False,
+      'dámosnos',
       VerbalForm({
         "lema": "dar",
         "categoria": "VMIP1P0"
@@ -55,7 +55,7 @@ class StructureTests(unittest.TestCase):
       ['nos']
     )
     self.tomandote = Structure(
-      True,
+      'tomándote',
       VerbalForm({
       "lema": "tomar",
       "categoria": "VMG0000"
@@ -63,7 +63,7 @@ class StructureTests(unittest.TestCase):
       ['te']
     )
     self.pido = Structure(
-      True,
+      'pido',
       VerbalForm({
       "lema": "pedir",
       "categoria": "VMIP1S0"
@@ -71,7 +71,7 @@ class StructureTests(unittest.TestCase):
       []
     )
     self.tomarsemelos = Structure(
-      True,
+      'tomársemelos',
       VerbalForm({
       "lema": "tomar",
       "categoria": "VMN0000"
@@ -79,7 +79,7 @@ class StructureTests(unittest.TestCase):
       ['se', 'me', 'los']
     )
     self.tomarselosme = Structure(
-      True,
+      'tomárselosme',
       VerbalForm({
       "lema": "tomar",
       "categoria": "VMN0000"
@@ -103,6 +103,10 @@ class StructureTests(unittest.TestCase):
     self.assertEqual(self.damosnos.reflexive, (True, True))
     self.assertEqual(self.tomarsemelos.reflexive, (True, True))
 
+  def test_has_extra_letter(self):
+    self.assertTrue(self.damosnos.has_extra_letter)
+    self.assertFalse(self.tomandote.has_extra_letter)
+
 
 class WordTests(unittest.TestCase):
   """ Tests to check if the enclitics are identified correctly
@@ -121,28 +125,13 @@ class WordTests(unittest.TestCase):
       with self.assertRaises(ValueError):
         Word(value)
 
-    with self.assertRaises(ValueError):
-      Word(u'las').analyze_word()
-
-  def test_syls_number(self):
-    self.assertEqual(len(Word(u'los').syllables), 1)
-    self.assertEqual(len(Word(u'tomároslo').syllables), 4)
-
-  def test_modify_ros_dos(self):
-    self.assertEqual(Word(u'tomároslo').syllables[-2], u'os')
-    self.assertEqual(Word(u'reñidos').syllables[-1], u'os')
-    self.assertEqual(Word(u'tomárosmela').syllables, 
-                    [u'to',u'már', u'os', u'me', u'la'])
-    self.assertEqual(Word(u'tomárososla').syllables, 
-                    [u'to', u'már', u'os', u'os', u'la'])
-
   def test_get_enclitics(self):
     self.demosela.get_enclitics()
     self.comer.get_enclitics()
     self.renidos.get_enclitics()
     self.acentuamelo.get_enclitics()
 
-    self.assertEqual(self.demosela.current_base,u'démo')
+    self.assertEqual(self.demosela.current_base,u'demo')
     self.assertEqual(self.renidos.current_enclitics, [u'os'])
     self.assertEqual(self.acentuamelo.current_base,u'acentua')
     self.assertEqual(self.comer.current_enclitics, [])
@@ -151,7 +140,7 @@ class WordTests(unittest.TestCase):
     pass
     # self.assertFalse(self.vamosnos.structures[0].is_regular)
 
-class TestForm(unittest.TestCase):
+class FormTests(unittest.TestCase):
   def setUp(self):
     self.tomo = VerbalForm({
       "lema": "tomar",
@@ -186,19 +175,11 @@ class TestConnection(unittest.TestCase):
     from secret import ACCESS_TOKEN
     cls.api = ApiculturRateLimitSafe(ACCESS_TOKEN)
 
-  def test_silabeame(self):
-    data = self.api.silabeame(word=u"perro")
-    self.assertEqual(data[u'palabraSilabeada'], u'pe=rro')
-    self.assertEqual(data[u'silabaTonica'], u'pe')
-    self.assertEqual(data[u'numeroSilabas'], 2)
-    self.assertEqual(data[u'posSilabaTonica'], 2)
-
   def test_lematiza2(self):
     data = self.api.lematiza2(word=u"meses")
     self.assertEqual(data[u'palabra'], u'meses')
     lemas = data[u'lemas']
     self.assertEqual(len(lemas), 2)
-
 
 
 if __name__ == '__main__':
