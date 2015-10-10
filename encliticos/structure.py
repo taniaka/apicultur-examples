@@ -104,8 +104,9 @@ class Structure:
       return has_extra_letter
     bad_ending = bad_end + ''.join(self.enclitics)
     ending_pos  = self.word.rfind(bad_ending)
+    print(self.word, bad_ending, ending_pos)
 
-    if (len(self.word) - ending_pos) == len(bad_ending):
+    if (len(self.word) - ending_pos) == len(bad_ending) and ending_pos != -1:
       if self.word != 'idos':
         has_extra_letter = True
     return has_extra_letter

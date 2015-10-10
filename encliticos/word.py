@@ -87,29 +87,9 @@ class Word:
     self.current_enclitics = self.current_enclitics[1:]
 
   def get_structures(self):
-    #TODO add lemmatization class
-    lemmas = self.detect_verbs()
-    word = self.stressless
-    encls = self.current_enclitics
-    structures = []
-    #iig = infinitivo, gerundio, imperativo
-    iig_structures = []
-    for lemma in lemmas:
-      try:
-        new_form = VerbalForm(lemma)
-      except ValueError:
-        None
-      else:
-        new_structure = Structure(word, new_form, encls)
-        structures.append(new_structure)
-        if new_structure.valid:
-          iig_structures.append(new_structure)
-
+    structures = self.detect_verbs()
     want_more_structures = False
-
     if structures:
-      if iig_structures:
-        structures = iig_structures
       for structure in structures:
         self.structures.append(structure)
         if self.current_enclitics:
@@ -119,48 +99,54 @@ class Word:
               want_more_structures = True
     else:
       if self.current_enclitics:
-        want_more_structures = True
-            
+        want_more_structures = True            
     if want_more_structures:
       self.encl_to_base()
       self.get_structures()
 
   def detect_verbs(self):
-    has_extra_letter = False
     if self.current_enclitics:
       if self.current_enclitics[0] in ['nos', 'se', 'os']:
         self.add_letter()
-    lemmas = self.APICULTUR.lematiza2(word=self.current_base)['lemas']
-    #TODO: remove repetition
-    lematizable = False
-    for lemma in lemmas:
-      if lemma['categoria'][0] == 'V':
-        lematizable = True
-    if not lematizable:
+    structures, iig_structures = self.build_structures(self.current_base)
+    if not structures:
       letters = list(self.current_base)
-      start = 0
       for index, letter in enumerate(letters):
         if letter in self.TILDLESS:
-          syl = ''.join(letters[start:index+1])
-          stressed_syl = self.swap_stress(syl, self.TILDLESS, self.TILDED)
-          #TODO avoid replacing twice
-          restressed = self.current_base.replace(syl, stressed_syl)
-          lemmas = self.APICULTUR.lematiza2(word=restressed)['lemas']
-          start = index + 1
-          lematizable = False
-          for lemma in lemmas:
-            if lemma['categoria'][0] == 'V':
-              lematizable = True
-          if lematizable:
+          stressed_letter = self.swap_stress(letter, self.TILDLESS, self.TILDED)
+          new_letters = letters[:]
+          new_letters[index] = stressed_letter
+          structures, iig_structures = self.build_structures(''.join(new_letters))
+          if structures:
             break
-    return lemmas
+    if iig_structures:
+      structures = iig_structures
+    return structures     
+
+  def build_structures(self, verb):
+    lemmas = self.APICULTUR.lematiza2(word=verb)['lemas']
+    structures = []
+    iig_structures = []
+    for lemma in lemmas:
+      try:
+        new_form = VerbalForm(lemma)
+      except ValueError:
+        None
+      else:
+        word = self.word[:]
+        encls = self.current_enclitics[:]
+        new_structure = Structure(word, new_form, encls)
+        structures.append(new_structure)
+        if new_structure.valid:
+          iig_structures.append(new_structure)
+    return structures, iig_structures
 
   def get_enclitics(self):
     self.stressless = self.swap_stress(self.word, self.TILDED, self.TILDLESS)
     base_encl = self.PATTERN.search(self.stressless).groups()
     self.current_base = base_encl[0]
-    self.current_enclitics = base_encl[1:]
-    self.current_enclitics = [value for value in self.current_enclitics if value != None]
+    # self.current_enclitics = base_encl[1:]
+    self.current_enclitics = [value for value in base_encl[1:] if value != None]
 
   def analyze_word(self):
     self.get_enclitics()
